@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import App from './App.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import { SEED, badgeList, computeMatches, computeStreak, goalProgress, levelInfo, points, ratingInfo, weekStart } from './data.js';
@@ -97,6 +97,49 @@ describe('matching logic', () => {
 });
 
 describe('app flow', () => {
+  it('shows the install button after beforeinstallprompt and invokes its prompt', async () => {
+    render(<App />);
+    const prompt = vi.fn().mockResolvedValue(undefined);
+    const event = new Event('beforeinstallprompt', { cancelable: true });
+    event.prompt = prompt;
+    event.userChoice = Promise.resolve({ outcome: 'accepted' });
+    act(() => window.dispatchEvent(event));
+
+    expect(event.defaultPrevented).toBe(true);
+    const installButton = screen.getByRole('button', { name: 'Install app' });
+    fireEvent.click(installButton);
+    await waitFor(() => expect(prompt).toHaveBeenCalledOnce());
+    expect(screen.queryByRole('button', { name: 'Install app' })).toBeNull();
+  });
+
+  it('toggles the offline banner on network events', () => {
+    render(<App />);
+    expect(screen.queryByText("You're offline. Your swaps are saved on this device.")).toBeNull();
+    act(() => window.dispatchEvent(new Event('offline')));
+    expect(document.querySelector('.offline-banner').textContent).toBe("You're offline. Your swaps are saved on this device.");
+    act(() => window.dispatchEvent(new Event('online')));
+    expect(screen.queryByText("You're offline. Your swaps are saved on this device.")).toBeNull();
+  });
+
+  it('hides install guidance while running standalone', () => {
+    const matchMedia = vi.spyOn(window, 'matchMedia').mockImplementation(query => ({
+      matches: query === '(display-mode: standalone)',
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn()
+    }));
+    try {
+      render(<App />);
+      const event = new Event('beforeinstallprompt', { cancelable: true });
+      event.prompt = vi.fn();
+      event.userChoice = Promise.resolve({ outcome: 'accepted' });
+      act(() => window.dispatchEvent(event));
+      expect(screen.queryByRole('button', { name: 'Install app' })).toBeNull();
+      expect(screen.queryByText('Tap Share, then Add to Home Screen')).toBeNull();
+    } finally {
+      matchMedia.mockRestore();
+    }
+  });
+
   it('loads older saved state without goals', () => {
     localStorage.setItem('campus-skill-swap.react.v1', JSON.stringify({
       profile: null,

@@ -1,7 +1,7 @@
 import { SwapIcon } from './ui.jsx';
 import { useCountUp } from '../hooks/useAppState.js';
 
-export function Nav({ openCount, onToggleTheme, onStartTour }) {
+export function Nav({ openCount, onToggleTheme, onStartTour, showInstall, onInstall, showIosHint, onDismissIosHint }) {
   return (
     <header className="nav">
       <div className="wrap nav-inner">
@@ -16,12 +16,19 @@ export function Nav({ openCount, onToggleTheme, onStartTour }) {
           <a href="#swaps">My swaps {openCount > 0 && <span className="pill">{openCount}</span>}</a>
           <a href="#top" onClick={e => { e.preventDefault(); onStartTour(); }}>Take the tour</a>
         </nav>
+        {showInstall && <button className="btn ghost small install-btn" type="button" onClick={onInstall}>Install app</button>}
         <button className="icon-btn" onClick={onToggleTheme} aria-label="Toggle dark mode" title="Toggle dark mode">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
           </svg>
         </button>
       </div>
+      {showIosHint && (
+        <div className="ios-install-hint" role="status">
+          <span>Tap Share, then Add to Home Screen</span>
+          <button type="button" aria-label="Dismiss install hint" onClick={onDismissIosHint}>×</button>
+        </div>
+      )}
     </header>
   );
 }

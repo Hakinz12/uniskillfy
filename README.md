@@ -15,6 +15,7 @@ Built for the **Build Your Own Website** hackathon by Roxten Studios.
 - **Gamification**: points, five levels, and badges.
 - **Dark mode**, responsive layout, keyboard accessible, respects reduced-motion settings.
 - Your profile and swaps are saved in your browser (`localStorage`). No backend, no sign-up.
+- Installable PWA with offline app shell and cached Google Fonts.
 
 ## Tech
 
@@ -38,13 +39,17 @@ npm test         # run the test suite
 npm run build    # production build in dist/
 ```
 
+## Install as an app
+
+Visit Campus Skill Swap in a supported browser and choose **Install app** when it appears. On iPhone or iPad, tap **Share**, then **Add to Home Screen**. The app shell and saved profile/swaps remain available offline.
+
 ## Deploy (pick one)
 
 **Netlify Drop** (fastest): run `npm run build`, then drag the `dist` folder onto https://app.netlify.com/drop.
 
 **Vercel / Netlify from GitHub**: push the repo, import it, and use build command `npm run build` and output directory `dist`.
 
-**GitHub Pages**: build, then publish the contents of `dist` (the Vite `base` is already set to `./`, so it works under a sub-path).
+**GitHub Pages**: this configuration targets the root of a domain; use a root-domain deployment or adjust the Vite base and PWA scope for a sub-path.
 
 ## AI disclosure
 

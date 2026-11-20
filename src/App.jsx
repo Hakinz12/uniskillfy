@@ -8,12 +8,14 @@ import Tour from './components/Tour.jsx';
 import NotFound, { isHomePathname } from './components/NotFound.jsx';
 import { ToastProvider, useToast } from './components/ui.jsx';
 import { useAppState, useTheme, useTour } from './hooks/useAppState.js';
+import { usePwa } from './hooks/usePwa.js';
 import { BASE_SWAPS, CATS, SEED, norm } from './data.js';
 
 function Site({ autoStartTour }) {
   const app = useAppState();
   const [, toggleTheme] = useTheme();
   const tour = useTour(autoStartTour);
+  const pwa = usePwa();
   const [target, setTarget] = useState(null);
   const [showStorageWarning, setShowStorageWarning] = useState(!app.storageAvailable);
   const toast = useToast();
@@ -60,7 +62,22 @@ function Site({ autoStartTour }) {
           <button type="button" className="storage-dismiss" aria-label="Dismiss storage warning" onClick={() => setShowStorageWarning(false)}>×</button>
         </div>
       )}
-      <Nav openCount={openCount} onToggleTheme={toggleTheme} onStartTour={tour.start} />
+      {pwa.offline && <div className="offline-banner" role="status">You're offline. Your swaps are saved on this device.</div>}
+      <Nav
+        openCount={openCount}
+        onToggleTheme={toggleTheme}
+        onStartTour={tour.start}
+        showInstall={pwa.showInstall}
+        onInstall={pwa.install}
+        showIosHint={pwa.showIosHint}
+        onDismissIosHint={pwa.dismissIosHint}
+      />
+      {pwa.updateAvailable && (
+        <div className="update-banner" role="status">
+          <span>A new version is available</span>
+          <button className="btn primary small" type="button" onClick={pwa.reload}>Reload</button>
+        </div>
+      )}
       <main id="main">
         <Hero members={members} skills={skills} swaps={swaps} />
         <HowItWorks />

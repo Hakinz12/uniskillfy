@@ -56,7 +56,7 @@ function Site() {
         <HowItWorks />
         <Match profile={profile} onSave={app.saveProfile} onReset={app.reset} onRequest={openRequest} />
         <Browse profile={profile} onRequest={openRequest} />
-        <Swaps profile={profile} requests={requests} onAdvance={advance} onCancel={app.cancel} />
+        <Swaps profile={profile} requests={requests} onAdvance={advance} onCancel={app.cancel} onSchedule={app.schedule} />
       </main>
       <Footer />
       <datalist id="skillList">

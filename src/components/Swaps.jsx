@@ -1,7 +1,80 @@
+import { useEffect, useRef, useState } from 'react';
 import { Avatar, SwapIcon } from './ui.jsx';
 import { badgeList, levelInfo, points } from '../data.js';
+import { downloadCalendarEvent } from '../calendar.js';
 
-function Request({ r, onAdvance, onCancel }) {
+function formatSession(session) {
+  const date = new Date(session.start);
+  const parts = new Intl.DateTimeFormat(undefined, {
+    weekday: 'short', day: 'numeric', month: 'short',
+    hour: 'numeric', minute: '2-digit', hour12: true
+  }).formatToParts(date);
+  const part = type => parts.find(item => item.type === type)?.value;
+  return `${part('weekday')} ${part('day')} ${part('month')}, ${part('hour')}:${part('minute')} ${part('dayPeriod')}, ${session.minutes} min`;
+}
+
+function ScheduleDialog({ request, onSave, onClose }) {
+  const ref = useRef(null);
+  const [date, setDate] = useState('');
+  const [time, setTime] = useState('');
+  const [minutes, setMinutes] = useState('30');
+  const today = new Date();
+  const minDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+  useEffect(() => {
+    if (request && ref.current && !ref.current.open) ref.current.showModal();
+  }, [request]);
+
+  function save(e) {
+    e.preventDefault();
+    const start = new Date(`${date}T${time}`);
+    if (start.getTime() <= Date.now()) {
+      ref.current.querySelector('input[type="time"]').setCustomValidity('Choose a time in the future.');
+      ref.current.querySelector('input[type="time"]').reportValidity();
+      return;
+    }
+    ref.current.querySelector('input[type="time"]').setCustomValidity('');
+    onSave({ start: start.toISOString(), minutes: Number(minutes) });
+    ref.current.close();
+  }
+
+  return (
+    <dialog ref={ref} aria-labelledby="scheduleTitle" onClose={onClose} onClick={e => { if (e.target === ref.current) ref.current.close(); }}>
+      <form className="dlg-body" onSubmit={save}>
+        <h3 id="scheduleTitle">Schedule session</h3>
+        <label className="field">
+          <span>Date</span>
+          <input type="date" aria-label="Date" value={date} min={minDate} required onChange={e => {
+            ref.current.querySelector('input[type="time"]').setCustomValidity('');
+            setDate(e.target.value);
+          }} />
+        </label>
+        <label className="field">
+          <span>Start time</span>
+          <input type="time" aria-label="Start time" value={time} required onChange={e => {
+            e.target.setCustomValidity('');
+            setTime(e.target.value);
+          }} />
+        </label>
+        <label className="field">
+          <span>Duration</span>
+          <select aria-label="Duration" value={minutes} onChange={e => setMinutes(e.target.value)}>
+            <option value="30">30 min</option>
+            <option value="45">45 min</option>
+            <option value="60">60 min</option>
+          </select>
+        </label>
+        <div className="form-actions">
+          <button className="btn primary" type="submit">Save session</button>
+          <button className="btn ghost" type="button" onClick={() => ref.current.close()}>Cancel</button>
+        </div>
+      </form>
+    </dialog>
+  );
+}
+
+function Request({ r, onAdvance, onCancel, onSchedule }) {
+  const [scheduling, setScheduling] = useState(false);
   const when = new Date(r.ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   return (
     <li className="req">
@@ -16,17 +89,31 @@ function Request({ r, onAdvance, onCancel }) {
         <div><small>You learn</small><b>{r.learn}</b></div>
       </div>
       {r.msg && <p className="req-msg">“{r.msg}”</p>}
+      {r.session && <p className="req-msg" aria-label="Scheduled session">{formatSession(r.session)}</p>}
       <div className="req-actions">
         <span className="when">Sent {when}</span>
         {r.status === 'pending' && <button className="btn ghost small" onClick={() => onAdvance(r.id)}>They accepted</button>}
-        {r.status === 'accepted' && <button className="btn primary small" onClick={() => onAdvance(r.id)}>Mark session done</button>}
+        {r.status === 'accepted' && (
+          <>
+            <button className="btn ghost small" onClick={() => setScheduling(true)}>Schedule session</button>
+            <button className="btn primary small" onClick={() => onAdvance(r.id)}>Mark session done</button>
+          </>
+        )}
+        {r.session && <button className="btn ghost small" onClick={() => downloadCalendarEvent(r, r.session)}>Add to calendar</button>}
         {r.status !== 'done' && <button className="btn ghost small" onClick={() => onCancel(r.id)}>Cancel</button>}
       </div>
+      {scheduling && (
+        <ScheduleDialog
+          request={r}
+          onSave={session => { onSchedule(r.id, session); setScheduling(false); }}
+          onClose={() => setScheduling(false)}
+        />
+      )}
     </li>
   );
 }
 
-export default function Swaps({ profile, requests, onAdvance, onCancel }) {
+export default function Swaps({ profile, requests, onAdvance, onCancel, onSchedule }) {
   const pts = points(requests);
   const lvl = levelInfo(pts);
   const badges = badgeList(profile, requests);
@@ -61,7 +148,7 @@ export default function Swaps({ profile, requests, onAdvance, onCancel }) {
 
           <div>
             <ul className="req-list">
-              {requests.map(r => <Request key={r.id} r={r} onAdvance={onAdvance} onCancel={onCancel} />)}
+              {requests.map(r => <Request key={r.id} r={r} onAdvance={onAdvance} onCancel={onCancel} onSchedule={onSchedule} />)}
             </ul>
             {!requests.length && (
               <div className="empty slim">

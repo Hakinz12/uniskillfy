@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import App from './App.jsx';
 import { SEED, computeMatches, levelInfo, points } from './data.js';
+import { buildCalendarContent } from './calendar.js';
 
 beforeEach(() => {
   cleanup();
@@ -58,6 +59,40 @@ describe('app flow', () => {
     fireEvent.click(screen.getByText('Mark session done'));
     expect(document.querySelector('.ring span').textContent).toBe('100');
     expect(document.querySelector('.level-name').textContent).toBe('Swapper');
+  });
+
+  it('schedules an accepted swap and persists its session', () => {
+    render(<App />);
+    fireEvent.click(screen.getByText('Fill with example data'));
+    fireEvent.click(screen.getAllByText('Request swap')[0]);
+    fireEvent.click(within(document.querySelector('dialog')).getByText('Send request'));
+    fireEvent.click(screen.getByText('They accepted'));
+    fireEvent.click(screen.getByRole('button', { name: 'Schedule session' }));
+
+    const dialog = screen.getByRole('dialog', { name: 'Schedule session' });
+    const future = new Date(Date.now() + 86_400_000);
+    const dateValue = `${future.getFullYear()}-${String(future.getMonth() + 1).padStart(2, '0')}-${String(future.getDate()).padStart(2, '0')}`;
+    fireEvent.change(within(dialog).getByLabelText('Date'), { target: { value: dateValue } });
+    fireEvent.change(within(dialog).getByLabelText('Start time'), { target: { value: '16:00' } });
+    fireEvent.change(within(dialog).getByLabelText('Duration'), { target: { value: '45' } });
+    fireEvent.click(within(dialog).getByText('Save session'));
+
+    expect(dialog.open).toBe(false);
+    expect(screen.getByLabelText('Scheduled session').textContent).toMatch(/4:00 PM, 45 min/);
+    expect(screen.getByRole('button', { name: 'Add to calendar' })).toBeTruthy();
+    expect(JSON.parse(localStorage.getItem('campus-skill-swap.react.v1')).requests[0].session.minutes).toBe(45);
+  });
+
+  it('creates valid calendar content for a scheduled swap', () => {
+    const content = buildCalendarContent({
+      id: 'swap-1', offer: 'Guitar', learn: 'Python', mname: 'Amara Okafor'
+    }, { start: '2026-11-28T16:00:00.000Z', minutes: 45 }, new Date('2026-11-20T08:00:00.000Z'));
+
+    expect(content).toContain('SUMMARY:Skill swap: Guitar for Python with Amara Okafor');
+    expect(content).toContain('DTSTART:20261128T160000Z');
+    expect(content).toContain('DTEND:20261128T164500Z');
+    expect(content).toContain('BEGIN:VCALENDAR\r\n');
+    expect(content).toContain('END:VCALENDAR\r\n');
   });
 
   it('validates the form', () => {

@@ -32,10 +32,14 @@ export function useAppState() {
     ...s,
     requests: s.requests.map(r => (r.id === id ? { ...r, session } : r))
   })), []);
+  const saveReview = useCallback((id, review) => setState(s => ({
+    ...s,
+    requests: s.requests.map(r => (r.id === id ? { ...r, review } : r))
+  })), []);
   const cancel = useCallback(id => setState(s => ({ ...s, requests: s.requests.filter(r => r.id !== id) })), []);
   const reset = useCallback(() => setState(EMPTY), []);
 
-  return { ...state, saveProfile, addRequest, advance, schedule, cancel, reset };
+  return { ...state, saveProfile, addRequest, advance, schedule, saveReview, cancel, reset };
 }
 
 export function useTheme() {

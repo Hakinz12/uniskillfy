@@ -54,9 +54,9 @@ function Site() {
       <main id="main">
         <Hero members={members} skills={skills} swaps={swaps} />
         <HowItWorks />
-        <Match profile={profile} onSave={app.saveProfile} onReset={app.reset} onRequest={openRequest} />
-        <Browse profile={profile} onRequest={openRequest} />
-        <Swaps profile={profile} requests={requests} onAdvance={advance} onCancel={app.cancel} onSchedule={app.schedule} />
+        <Match profile={profile} requests={requests} onSave={app.saveProfile} onReset={app.reset} onRequest={openRequest} />
+        <Browse profile={profile} requests={requests} onRequest={openRequest} />
+        <Swaps profile={profile} requests={requests} onAdvance={advance} onCancel={app.cancel} onSchedule={app.schedule} onSaveReview={app.saveReview} />
       </main>
       <Footer />
       <datalist id="skillList">

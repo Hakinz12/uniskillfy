@@ -1,8 +1,19 @@
 import { Avatar } from './ui.jsx';
+import { ratingInfo } from '../data.js';
 
 const LABEL = { mutual: 'Mutual swap', learn: 'You can learn', teach: 'You can teach' };
 
-export function MatchCard({ match, onRequest }) {
+function Rating({ member, requests }) {
+  const rating = ratingInfo(member, requests);
+  if (!rating) return null;
+  return (
+    <span className="rating" aria-label={`Rated ${rating.average.toFixed(1)} out of 5 from ${rating.count} reviews`}>
+      <span aria-hidden="true">★</span> {rating.average.toFixed(1)} ({rating.count})
+    </span>
+  );
+}
+
+export function MatchCard({ match, onRequest, requests }) {
   const { c, theyTeach, theyWant, score, kind } = match;
   return (
     <article className="m-card">
@@ -11,6 +22,7 @@ export function MatchCard({ match, onRequest }) {
         <div className="m-id"><strong>{c.name}</strong><span>{c.college}</span></div>
         <div className="score" style={{ '--p': score }} aria-label={`${score} percent match`}><b>{score}%</b></div>
       </div>
+      <Rating member={c} requests={requests} />
       <div><span className={`tag ${kind}`}>{LABEL[kind]}</span></div>
       <ul className="why">
         {theyTeach.map(s => <li key={'t' + s}>Teaches <b>{s}</b>, which you want</li>)}
@@ -27,7 +39,7 @@ export function MatchCard({ match, onRequest }) {
   );
 }
 
-export function CommunityCard({ member, view, onRequest }) {
+export function CommunityCard({ member, view, onRequest, requests }) {
   const teach = view === 'teach';
   const shown = teach ? member.teaches : member.wants;
   const other = teach ? member.wants : member.teaches;
@@ -39,6 +51,7 @@ export function CommunityCard({ member, view, onRequest }) {
           <strong>{member.name}{member.isMe && <> <span className="tag mutual">You</span></>}</strong>
           <span>{member.college}</span>
         </div>
+        <Rating member={member} requests={requests} />
       </div>
       {member.bio && <p className="bio">“{member.bio}”</p>}
       <div>

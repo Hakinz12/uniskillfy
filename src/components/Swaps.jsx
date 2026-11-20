@@ -73,8 +73,65 @@ function ScheduleDialog({ request, onSave, onClose }) {
   );
 }
 
-function Request({ r, onAdvance, onCancel, onSchedule }) {
+function ReviewDialog({ request, onSave, onClose }) {
+  const ref = useRef(null);
+  const [rating, setRating] = useState(request.review?.rating || 0);
+  const [text, setText] = useState(request.review?.text || '');
+  const [again, setAgain] = useState(request.review?.again || false);
+
+  useEffect(() => {
+    if (ref.current && !ref.current.open) ref.current.showModal();
+  }, []);
+
+  function save(e) {
+    e.preventDefault();
+    onSave({ rating: Number(rating), text: text.trim(), again, ts: Date.now() });
+    ref.current.close();
+  }
+
+  return (
+    <dialog ref={ref} aria-labelledby="reviewTitle" onClose={onClose} onClick={e => { if (e.target === ref.current) ref.current.close(); }}>
+      <form className="dlg-body" onSubmit={save}>
+        <h3 id="reviewTitle">Rate your swap with {request.mname}</h3>
+        <fieldset className="field review-field">
+          <legend>Rating</legend>
+          <div className="review-stars">
+            {[1, 2, 3, 4, 5].map(value => (
+              <label key={value} className={rating === value ? 'selected' : ''}>
+                <input
+                  type="radio"
+                  name={`rating-${request.id}`}
+                  value={value}
+                  aria-label={`${value} ${value === 1 ? 'star' : 'stars'}`}
+                  checked={rating === value}
+                  required
+                  onChange={() => setRating(value)}
+                />
+                <span aria-hidden="true">★</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        <label className="field">
+          <span>Review <i>(optional, up to 200 characters)</i></span>
+          <textarea rows={4} maxLength={200} value={text} onChange={e => setText(e.target.value)} />
+        </label>
+        <label className="review-again">
+          <input type="checkbox" checked={again} onChange={e => setAgain(e.target.checked)} />
+          <span>I'd swap with them again</span>
+        </label>
+        <div className="form-actions">
+          <button className="btn primary" type="submit">Save review</button>
+          <button className="btn ghost" type="button" onClick={() => ref.current.close()}>Cancel</button>
+        </div>
+      </form>
+    </dialog>
+  );
+}
+
+function Request({ r, onAdvance, onCancel, onSchedule, onSaveReview }) {
   const [scheduling, setScheduling] = useState(false);
+  const [reviewing, setReviewing] = useState(false);
   const when = new Date(r.ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   return (
     <li className="req">
@@ -90,6 +147,15 @@ function Request({ r, onAdvance, onCancel, onSchedule }) {
       </div>
       {r.msg && <p className="req-msg">“{r.msg}”</p>}
       {r.session && <p className="req-msg" aria-label="Scheduled session">{formatSession(r.session)}</p>}
+      {r.review && (
+        <div className="req-review">
+          <p className="review-rating" role="img" aria-label={`Rated ${r.review.rating} out of 5 stars`}>
+            {'★'.repeat(r.review.rating)}{'☆'.repeat(5 - r.review.rating)}
+          </p>
+          {r.review.text && <p>{r.review.text}</p>}
+          {r.review.again && <p className="review-again-note">I'd swap with them again.</p>}
+        </div>
+      )}
       <div className="req-actions">
         <span className="when">Sent {when}</span>
         {r.status === 'pending' && <button className="btn ghost small" onClick={() => onAdvance(r.id)}>They accepted</button>}
@@ -99,6 +165,8 @@ function Request({ r, onAdvance, onCancel, onSchedule }) {
             <button className="btn primary small" onClick={() => onAdvance(r.id)}>Mark session done</button>
           </>
         )}
+        {r.status === 'done' && !r.review && <button className="btn primary small" onClick={() => setReviewing(true)}>Rate this swap</button>}
+        {r.status === 'done' && r.review && <button className="btn ghost small" onClick={() => setReviewing(true)}>Edit review</button>}
         {r.session && <button className="btn ghost small" onClick={() => downloadCalendarEvent(r, r.session)}>Add to calendar</button>}
         {r.status !== 'done' && <button className="btn ghost small" onClick={() => onCancel(r.id)}>Cancel</button>}
       </div>
@@ -109,11 +177,18 @@ function Request({ r, onAdvance, onCancel, onSchedule }) {
           onClose={() => setScheduling(false)}
         />
       )}
+      {reviewing && (
+        <ReviewDialog
+          request={r}
+          onSave={review => { onSaveReview(r.id, review); setReviewing(false); }}
+          onClose={() => setReviewing(false)}
+        />
+      )}
     </li>
   );
 }
 
-export default function Swaps({ profile, requests, onAdvance, onCancel, onSchedule }) {
+export default function Swaps({ profile, requests, onAdvance, onCancel, onSchedule, onSaveReview }) {
   const pts = points(requests);
   const lvl = levelInfo(pts);
   const badges = badgeList(profile, requests);
@@ -148,7 +223,7 @@ export default function Swaps({ profile, requests, onAdvance, onCancel, onSchedu
 
           <div>
             <ul className="req-list">
-              {requests.map(r => <Request key={r.id} r={r} onAdvance={onAdvance} onCancel={onCancel} onSchedule={onSchedule} />)}
+              {requests.map(r => <Request key={r.id} r={r} onAdvance={onAdvance} onCancel={onCancel} onSchedule={onSchedule} onSaveReview={onSaveReview} />)}
             </ul>
             {!requests.length && (
               <div className="empty slim">

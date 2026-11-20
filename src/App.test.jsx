@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import App from './App.jsx';
-import { SEED, computeMatches, levelInfo, points } from './data.js';
+import { SEED, computeMatches, levelInfo, points, ratingInfo } from './data.js';
 import { buildCalendarContent } from './calendar.js';
 import { buildShareText } from './components/SwapCard.jsx';
 
@@ -30,8 +30,22 @@ describe('matching logic', () => {
   it('computes points and levels', () => {
     const reqs = [{ status: 'pending' }, { status: 'done' }];
     expect(points(reqs)).toBe(110);
+    expect(points([{ status: 'done', review: { rating: 5 } }])).toBe(120);
     expect(levelInfo(110).name).toBe('Swapper');
+    expect(levelInfo(120).name).toBe('Swapper');
     expect(levelInfo(0).name).toBe('Newcomer');
+  });
+
+  it('combines a seeded rating with the user reviews for that student', () => {
+    const amara = SEED.find(student => student.id === 'amara');
+    const rating = ratingInfo(amara, [
+      { mid: 'amara', review: { rating: 5 } },
+      { mid: 'amara', review: { rating: 3 } },
+      { mid: 'rohan', review: { rating: 1 } }
+    ]);
+
+    expect(rating.count).toBe(14);
+    expect(rating.average).toBeCloseTo(4.69, 2);
   });
 });
 
@@ -100,6 +114,47 @@ describe('app flow', () => {
     expect(screen.getByLabelText('Scheduled session').textContent).toMatch(/4:00 PM, 45 min/);
     expect(screen.getByRole('button', { name: 'Add to calendar' })).toBeTruthy();
     expect(JSON.parse(localStorage.getItem('campus-skill-swap.react.v1')).requests[0].session.minutes).toBe(45);
+  });
+
+  it('saves and edits a review for a completed swap', () => {
+    render(<App />);
+    fireEvent.click(screen.getByText('Fill with example data'));
+    fireEvent.click(screen.getAllByText('Request swap')[0]);
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Request a swap' })).getByText('Send request'));
+    fireEvent.click(screen.getByText('They accepted'));
+    fireEvent.click(screen.getByText('Mark session done'));
+    fireEvent.click(screen.getByRole('button', { name: 'Rate this swap' }));
+
+    let dialog = screen.getByRole('dialog', { name: /Rate your swap with/ });
+    fireEvent.click(within(dialog).getByRole('radio', { name: '4 stars' }));
+    fireEvent.change(within(dialog).getByLabelText(/Review/), { target: { value: 'Great session!' } });
+    fireEvent.click(within(dialog).getByRole('checkbox', { name: "I'd swap with them again" }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save review' }));
+
+    let saved = JSON.parse(localStorage.getItem('campus-skill-swap.react.v1')).requests[0].review;
+    expect(saved).toMatchObject({ rating: 4, text: 'Great session!', again: true });
+    expect(saved.ts).toEqual(expect.any(Number));
+    expect(screen.getByRole('img', { name: 'Rated 4 out of 5 stars' })).toBeTruthy();
+    expect(screen.getByText('Great session!')).toBeTruthy();
+    expect(document.querySelector('.ring span').textContent).toBe('120');
+    expect(screen.getByText('Feedback giver')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit review' }));
+    dialog = screen.getByRole('dialog', { name: /Rate your swap with/ });
+    fireEvent.click(within(dialog).getByRole('radio', { name: '2 stars' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save review' }));
+    saved = JSON.parse(localStorage.getItem('campus-skill-swap.react.v1')).requests[0].review;
+    expect(saved.rating).toBe(2);
+    expect(document.querySelector('.ring span').textContent).toBe('120');
+  });
+
+  it('sorts community cards by rating', () => {
+    render(<App />);
+    const cards = () => [...document.querySelectorAll('#browse .m-card')];
+    expect(cards()[0].textContent).toContain('Amara Okafor');
+    fireEvent.change(screen.getByRole('combobox', { name: 'Sort by' }), { target: { value: 'rating' } });
+    expect(cards()[0].textContent).toContain('Camille Laurent');
+    expect(cards()[0].querySelector('.rating').textContent).toContain('4.9 (17)');
   });
 
   it('creates valid calendar content for a scheduled swap', () => {

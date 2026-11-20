@@ -10,15 +10,18 @@ export const CATS = {
   Fitness: ['Yoga', 'Meditation', 'Calisthenics']
 };
 
-const m = (id, name, college, teaches, wants, when, mode, bio) => ({ id, name, college, teaches, wants, when, mode, bio });
+const m = (id, name, college, teaches, wants, when, mode, bio, rating, reviews) => ({
+  id, name, college, teaches, wants, when, mode, bio,
+  ...(rating ? { rating, reviews } : {})
+});
 
 export const SEED = [
-  m('amara', 'Amara Okafor', 'Riverside Institute', ['Python', 'Statistics'], ['Guitar', 'Public speaking'], 'Weekday evenings', 'Online', 'Debugs for fun. Yes, really.'),
-  m('rohan', 'Rohan Kapoor', 'Lakeview University', ['Guitar', 'Music production'], ['Python', 'Excel'], 'Weekends', 'In person', 'Will trade chords for code.'),
-  m('camille', 'Camille Laurent', 'Metro Design School', ['French', 'Photography'], ['Excel', 'Figma'], 'Weekday mornings', 'Either', 'Native speaker, very patient.'),
+  m('amara', 'Amara Okafor', 'Riverside Institute', ['Python', 'Statistics'], ['Guitar', 'Public speaking'], 'Weekday evenings', 'Online', 'Debugs for fun. Yes, really.', 4.8, 12),
+  m('rohan', 'Rohan Kapoor', 'Lakeview University', ['Guitar', 'Music production'], ['Python', 'Excel'], 'Weekends', 'In person', 'Will trade chords for code.', 4.6, 8),
+  m('camille', 'Camille Laurent', 'Metro Design School', ['French', 'Photography'], ['Excel', 'Figma'], 'Weekday mornings', 'Either', 'Native speaker, very patient.', 4.9, 17),
   m('diego', 'Diego Fernández', 'Harbor City College', ['Spanish', 'Calisthenics'], ['Python', 'Public speaking'], 'Weekday evenings', 'In person', 'Handstands by graduation.'),
   m('priya', 'Priya Nair', 'Riverside Institute', ['Figma', 'UI design'], ['Calculus', 'Guitar'], 'Flexible', 'Online', 'Pixels are my love language.'),
-  m('kwame', 'Kwame Mensah', 'St. Marlowe College', ['Public speaking', 'Debate'], ['Excel', 'Photography'], 'Weekends', 'Either', 'Captain of the debate society.'),
+  m('kwame', 'Kwame Mensah', 'St. Marlowe College', ['Public speaking', 'Debate'], ['Excel', 'Photography'], 'Weekends', 'Either', 'Captain of the debate society.', 4.7, 9),
   m('yuki', 'Yuki Tanaka', 'Lakeview University', ['Japanese', 'Illustration'], ['French', 'Python'], 'Weekday evenings', 'Online', 'Sketchbook always in my bag.'),
   m('fatima', 'Fatima Al-Sayed', 'Metro Design School', ['Calculus', 'Physics'], ['Figma', 'Public speaking'], 'Weekday mornings', 'In person', 'Maths tutor who hates jargon.'),
   m('liam', "Liam O'Brien", 'Harbor City College', ['Excel', 'Data analysis'], ['Guitar', 'Spanish'], 'Flexible', 'Either', 'Pivot tables are a personality.'),
@@ -41,7 +44,7 @@ export const LEVELS = [
   { at: 150, name: 'Connector' },
   { at: 300, name: 'Campus Legend' }
 ];
-export const PTS = { pending: 10, accepted: 30, done: 100 };
+export const PTS = { pending: 10, accepted: 30, done: 100, review: 20 };
 
 /* ---------- helpers ---------- */
 export const norm = s => String(s).trim().toLowerCase().replace(/\s+/g, ' ');
@@ -84,7 +87,18 @@ export function computeMatches(p) {
   return out.sort((x, y) => rank[x.kind] - rank[y.kind] || y.score - x.score);
 }
 
-export const points = requests => requests.reduce((n, r) => n + PTS[r.status], 0);
+export const points = requests => requests.reduce((n, r) => n + PTS[r.status] + (r.review ? PTS.review : 0), 0);
+
+export function ratingInfo(student, requests = []) {
+  const seedCount = student.reviews || 0;
+  const ownRatings = requests
+    .filter(request => request.mid === student.id && request.review)
+    .map(request => request.review.rating);
+  const count = seedCount + ownRatings.length;
+  if (!count) return null;
+  const total = (student.rating || 0) * seedCount + ownRatings.reduce((sum, rating) => sum + rating, 0);
+  return { average: total / count, count };
+}
 
 export function levelInfo(pts) {
   let i = 0;
@@ -101,6 +115,7 @@ export function badgeList(profile, requests) {
   const done = requests.filter(x => x.status === 'done').length;
   return [
     { ico: '🤝', name: 'First swap', desc: 'Complete a session', on: done >= 1 },
+    { ico: '✍️', name: 'Feedback giver', desc: 'Leave your first review', on: requests.some(x => !!x.review) },
     { ico: '🌐', name: 'Connector', desc: 'Request 3 different people', on: new Set(requests.map(x => x.mid)).size >= 3 },
     { ico: '📚', name: 'Open book', desc: 'Offer 3 or more skills', on: !!profile && profile.teaches.length >= 3 },
     { ico: '🔭', name: 'Curious mind', desc: 'Want to learn 3 or more skills', on: !!profile && profile.wants.length >= 3 },

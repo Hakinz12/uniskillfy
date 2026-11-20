@@ -16,7 +16,7 @@ function validate(f) {
   return '';
 }
 
-export default function Match({ profile, onSave, onReset, onRequest }) {
+export default function Match({ profile, requests, onSave, onReset, onRequest }) {
   const [form, setForm] = useState(profile || BLANK);
   const [error, setError] = useState('');
   const resultsRef = useRef(null);
@@ -130,7 +130,7 @@ export default function Match({ profile, onSave, onReset, onRequest }) {
                   <h3>{matches.length} match{matches.length > 1 ? 'es' : ''} for {profile.name.split(' ')[0]}</h3>
                   <p>{mutual ? `${mutual} mutual swap${mutual > 1 ? 's' : ''}: you each have something the other wants.` : 'No mutual swaps yet, but these people can help.'}</p>
                 </div>
-                {matches.map(m => <MatchCard key={m.c.id} match={m} onRequest={onRequest} />)}
+                {matches.map(m => <MatchCard key={m.c.id} match={m} onRequest={onRequest} requests={requests} />)}
               </>
             )}
           </div>

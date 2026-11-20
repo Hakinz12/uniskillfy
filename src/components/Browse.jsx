@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react';
 import { CommunityCard } from './Cards.jsx';
 import { SearchIcon } from './ui.jsx';
-import { CATS, SEED, catOf, norm } from '../data.js';
+import { CATS, SEED, catOf, norm, ratingInfo } from '../data.js';
 
-export default function Browse({ profile, onRequest }) {
+export default function Browse({ profile, requests, onRequest }) {
   const [view, setView] = useState('teach');
   const [cat, setCat] = useState('All');
   const [query, setQuery] = useState('');
+  const [sort, setSort] = useState('current');
 
   const everyone = useMemo(() => (profile ? [{ ...profile, id: 'me', isMe: true }, ...SEED] : SEED), [profile]);
   const hasOther = everyone.some(c => [...c.teaches, ...c.wants].some(s => catOf(s) === 'Other'));
@@ -14,13 +15,18 @@ export default function Browse({ profile, onRequest }) {
 
   const list = useMemo(() => {
     const q = norm(query);
-    return everyone.filter(c => {
+    const filtered = everyone.filter(c => {
       const skills = view === 'teach' ? c.teaches : c.wants;
       if (cat !== 'All' && !skills.some(s => catOf(s) === cat)) return false;
       if (!q) return true;
       return norm(c.name).includes(q) || norm(c.college).includes(q) || [...c.teaches, ...c.wants].some(s => norm(s).includes(q));
     });
-  }, [everyone, view, cat, query]);
+    if (sort === 'current') return filtered;
+    return filtered
+      .map((member, index) => ({ member, index, rating: ratingInfo(member, requests)?.average ?? -1 }))
+      .sort((a, b) => b.rating - a.rating || a.index - b.index)
+      .map(item => item.member);
+  }, [everyone, view, cat, query, sort, requests]);
 
   return (
     <section className="section" id="browse">
@@ -40,6 +46,13 @@ export default function Browse({ profile, onRequest }) {
               <button key={k} className={'seg-btn' + (view === k ? ' on' : '')} aria-pressed={view === k} onClick={() => setView(k)}>{label}</button>
             ))}
           </div>
+          <label className="sort-control">
+            <span>Sort by</span>
+            <select aria-label="Sort by" value={sort} onChange={e => setSort(e.target.value)}>
+              <option value="current">Current order</option>
+              <option value="rating">Top rated</option>
+            </select>
+          </label>
         </div>
 
         <div className="cats" role="group" aria-label="Categories">
@@ -49,7 +62,7 @@ export default function Browse({ profile, onRequest }) {
         </div>
 
         <div className="grid">
-          {list.map(c => <CommunityCard key={c.id} member={c} view={view} onRequest={onRequest} />)}
+          {list.map(c => <CommunityCard key={c.id} member={c} view={view} onRequest={onRequest} requests={requests} />)}
         </div>
         {!list.length && <p className="none">No one matches that yet. Be the first. Add yourself above.</p>}
       </div>

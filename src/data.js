@@ -89,6 +89,56 @@ export function computeMatches(p) {
 
 export const points = requests => requests.reduce((n, r) => n + PTS[r.status] + (r.review ? PTS.review : 0), 0);
 
+export function goalProgress(goal, requests) {
+  const completed = requests.filter(request =>
+    request.status === 'done' && same(request.learn, goal.skill)
+  ).length;
+  return { completed, complete: completed >= goal.target };
+}
+
+export function weekStart(date) {
+  const start = new Date(date);
+  start.setHours(0, 0, 0, 0);
+  start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
+  return start;
+}
+
+export function computeStreak(requests, now = Date.now()) {
+  const activeWeeks = new Set(
+    requests
+      .filter(request => request.status === 'done')
+      .map(request => weekStart(request.doneAt ?? request.ts).getTime())
+  );
+  const currentWeek = weekStart(now).getTime();
+  const previousWeekDate = new Date(currentWeek);
+  previousWeekDate.setDate(previousWeekDate.getDate() - 7);
+  const previousWeek = previousWeekDate.getTime();
+  const thisWeekDone = activeWeeks.has(currentWeek);
+
+  let current = 0;
+  let cursor = thisWeekDone ? currentWeek : activeWeeks.has(previousWeek) ? previousWeek : null;
+  while (cursor !== null && activeWeeks.has(cursor)) {
+    current += 1;
+    const previous = new Date(cursor);
+    previous.setDate(previous.getDate() - 7);
+    cursor = previous.getTime();
+  }
+
+  const weeks = [...activeWeeks].sort((a, b) => a - b);
+  let best = 0;
+  let run = 0;
+  let previous = null;
+  weeks.forEach(week => {
+    const nextWeek = previous === null ? null : new Date(previous);
+    if (nextWeek) nextWeek.setDate(nextWeek.getDate() + 7);
+    run = nextWeek?.getTime() === week ? run + 1 : 1;
+    best = Math.max(best, run);
+    previous = week;
+  });
+
+  return { current, best, thisWeekDone };
+}
+
 export function ratingInfo(student, requests = []) {
   const seedCount = student.reviews || 0;
   const ownRatings = requests
@@ -111,11 +161,14 @@ export function levelInfo(pts) {
   };
 }
 
-export function badgeList(profile, requests) {
+export function badgeList(profile, requests, goals = [], now = Date.now()) {
   const done = requests.filter(x => x.status === 'done').length;
+  const streak = computeStreak(requests, now);
   return [
     { ico: '🤝', name: 'First swap', desc: 'Complete a session', on: done >= 1 },
     { ico: '✍️', name: 'Feedback giver', desc: 'Leave your first review', on: requests.some(x => !!x.review) },
+    { ico: '🎯', name: 'Goal getter', desc: 'Complete a learning goal', on: goals.some(goal => goalProgress(goal, requests).complete) },
+    { ico: '🔥', name: 'On a roll', desc: 'Keep a 3-week swap streak', on: streak.current >= 3 },
     { ico: '🌐', name: 'Connector', desc: 'Request 3 different people', on: new Set(requests.map(x => x.mid)).size >= 3 },
     { ico: '📚', name: 'Open book', desc: 'Offer 3 or more skills', on: !!profile && profile.teaches.length >= 3 },
     { ico: '🔭', name: 'Curious mind', desc: 'Want to learn 3 or more skills', on: !!profile && profile.wants.length >= 3 },

@@ -2,20 +2,36 @@ import { useCallback, useEffect, useState } from 'react';
 
 const STORE = 'campus-skill-swap.react.v1';
 const THEME = 'campus-skill-swap.theme';
-const EMPTY = { profile: null, requests: [] };
+const EMPTY = { profile: null, requests: [], goals: [] };
+
+function checkStorage() {
+  try {
+    const key = `${STORE}.availability-check`;
+    localStorage.setItem(key, '1');
+    localStorage.removeItem(key);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 function load() {
   try {
     const d = JSON.parse(localStorage.getItem(STORE));
     if (d && typeof d === 'object') {
-      return { profile: d.profile || null, requests: Array.isArray(d.requests) ? d.requests : [] };
+      return {
+        profile: d.profile || null,
+        requests: Array.isArray(d.requests) ? d.requests : [],
+        goals: Array.isArray(d.goals) ? d.goals : []
+      };
     }
-  } catch { /* ignore corrupt or blocked storage */ }
+  } catch { /* corrupt or blocked storage starts with defaults */ }
   return EMPTY;
 }
 
 /** Profile + swap requests, persisted to localStorage. */
 export function useAppState() {
+  const [storageAvailable] = useState(checkStorage);
   const [state, setState] = useState(load);
 
   useEffect(() => {
@@ -26,7 +42,12 @@ export function useAppState() {
   const addRequest = useCallback(req => setState(s => ({ ...s, requests: [req, ...s.requests] })), []);
   const advance = useCallback(id => setState(s => ({
     ...s,
-    requests: s.requests.map(r => (r.id === id ? { ...r, status: r.status === 'pending' ? 'accepted' : 'done' } : r))
+    requests: s.requests.map(r => {
+      if (r.id !== id) return r;
+      if (r.status === 'pending') return { ...r, status: 'accepted' };
+      if (r.status === 'accepted') return { ...r, status: 'done', doneAt: Date.now() };
+      return r;
+    })
   })), []);
   const schedule = useCallback((id, session) => setState(s => ({
     ...s,
@@ -36,10 +57,16 @@ export function useAppState() {
     ...s,
     requests: s.requests.map(r => (r.id === id ? { ...r, review } : r))
   })), []);
+  const addGoal = useCallback(goal => setState(s => ({ ...s, goals: [...s.goals, goal] })), []);
+  const removeGoal = useCallback(id => setState(s => ({ ...s, goals: s.goals.filter(goal => goal.id !== id) })), []);
+  const updateGoal = useCallback((id, updates) => setState(s => ({
+    ...s,
+    goals: s.goals.map(goal => (goal.id === id ? { ...goal, ...updates } : goal))
+  })), []);
   const cancel = useCallback(id => setState(s => ({ ...s, requests: s.requests.filter(r => r.id !== id) })), []);
   const reset = useCallback(() => setState(EMPTY), []);
 
-  return { ...state, saveProfile, addRequest, advance, schedule, saveReview, cancel, reset };
+  return { ...state, storageAvailable, saveProfile, addRequest, advance, schedule, saveReview, addGoal, removeGoal, updateGoal, cancel, reset };
 }
 
 const TOUR_SEEN = 'tourSeen';

@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { initials } from '../data.js';
 import { useToast, SwapIcon } from './ui.jsx';
 
@@ -201,9 +201,11 @@ async function copyText(text) {
 
 export default function SwapCard({ profile }) {
   const dialogRef = useRef(null);
+  const [generating, setGenerating] = useState(false);
   const toast = useToast();
 
   async function downloadImage() {
+    setGenerating(true);
     try {
       const file = await createCardImage(profile);
       const url = URL.createObjectURL(file);
@@ -215,10 +217,13 @@ export default function SwapCard({ profile }) {
       toast('Your swap card image is downloading.');
     } catch (error) {
       toast(error instanceof Error ? `Could not create image: ${error.message}` : 'Could not create image.');
+    } finally {
+      setGenerating(false);
     }
   }
 
   async function share() {
+    setGenerating(true);
     try {
       const file = await createCardImage(profile);
       const text = buildShareText(profile);
@@ -234,8 +239,12 @@ export default function SwapCard({ profile }) {
       toast('Swap message copied to the clipboard.');
     } catch (error) {
       toast(error instanceof Error ? `Could not share: ${error.message}` : 'Could not share your swap card.');
+    } finally {
+      setGenerating(false);
     }
   }
+
+  const busyContent = generating && <><span className="spinner" aria-hidden="true" />Generating image...</>;
 
   return (
     <>
@@ -270,8 +279,8 @@ export default function SwapCard({ profile }) {
             <p className="swap-share-tagline">Teach what you know. Learn what you love.</p>
           </article>
           <div className="form-actions swap-share-actions">
-            <button className="btn primary" type="button" autoFocus onClick={downloadImage}>Download image</button>
-            <button className="btn ghost" type="button" onClick={share}>Share</button>
+            <button className="btn primary" type="button" autoFocus disabled={generating} onClick={downloadImage}>{busyContent || 'Download image'}</button>
+            <button className="btn ghost" type="button" disabled={generating} onClick={share}>{busyContent || 'Share'}</button>
             <button className="btn ghost" type="button" onClick={() => dialogRef.current.close()}>Close</button>
           </div>
         </div>

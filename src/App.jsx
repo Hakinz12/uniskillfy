@@ -5,6 +5,7 @@ import Browse from './components/Browse.jsx';
 import Swaps from './components/Swaps.jsx';
 import RequestDialog from './components/RequestDialog.jsx';
 import Tour from './components/Tour.jsx';
+import NotFound, { isHomePathname } from './components/NotFound.jsx';
 import { ToastProvider, useToast } from './components/ui.jsx';
 import { useAppState, useTheme, useTour } from './hooks/useAppState.js';
 import { BASE_SWAPS, CATS, SEED, norm } from './data.js';
@@ -14,6 +15,7 @@ function Site({ autoStartTour }) {
   const [, toggleTheme] = useTheme();
   const tour = useTour(autoStartTour);
   const [target, setTarget] = useState(null);
+  const [showStorageWarning, setShowStorageWarning] = useState(!app.storageAvailable);
   const toast = useToast();
   const { profile, requests } = app;
 
@@ -52,13 +54,29 @@ function Site({ autoStartTour }) {
   return (
     <>
       <a className="skip" href="#main">Skip to content</a>
+      {showStorageWarning && (
+        <div className="storage-warning" role="alert">
+          <span>Your progress can't be saved in this browser mode.</span>
+          <button type="button" className="storage-dismiss" aria-label="Dismiss storage warning" onClick={() => setShowStorageWarning(false)}>×</button>
+        </div>
+      )}
       <Nav openCount={openCount} onToggleTheme={toggleTheme} onStartTour={tour.start} />
       <main id="main">
         <Hero members={members} skills={skills} swaps={swaps} />
         <HowItWorks />
         <Match profile={profile} requests={requests} onSave={app.saveProfile} onReset={app.reset} onRequest={openRequest} />
         <Browse profile={profile} requests={requests} onRequest={openRequest} />
-        <Swaps profile={profile} requests={requests} onAdvance={advance} onCancel={app.cancel} onSchedule={app.schedule} onSaveReview={app.saveReview} />
+        <Swaps
+          profile={profile}
+          requests={requests}
+          goals={app.goals}
+          onAdvance={advance}
+          onCancel={app.cancel}
+          onSchedule={app.schedule}
+          onSaveReview={app.saveReview}
+          onAddGoal={app.addGoal}
+          onRemoveGoal={app.removeGoal}
+        />
       </main>
       <Footer onStartTour={tour.start} />
       <datalist id="skillList">
@@ -71,6 +89,7 @@ function Site({ autoStartTour }) {
 }
 
 export default function App({ autoStartTour = import.meta.env.MODE !== 'test' }) {
+  if (!isHomePathname(window.location.pathname)) return <NotFound />;
   return (
     <ToastProvider>
       <Site autoStartTour={autoStartTour} />

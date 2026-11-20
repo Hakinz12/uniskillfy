@@ -5,7 +5,7 @@ import { useToast } from './ui.jsx';
 const MAX = 8;
 
 /** Controlled skill-chips input. `value` is a string[]; `onChange` gets the new array. */
-export default function ChipInput({ labelId, kind, value, onChange, suggestions = [] }) {
+export default function ChipInput({ labelId, kind, value, onChange, suggestions = [], inputRef, invalid, describedBy }) {
   const [text, setText] = useState('');
   const toast = useToast();
 
@@ -23,7 +23,7 @@ export default function ChipInput({ labelId, kind, value, onChange, suggestions 
 
   return (
     <>
-      <div className="chips-input" onClick={e => e.currentTarget.querySelector('input').focus()}>
+      <div className={'chips-input' + (invalid ? ' invalid' : '')} onClick={e => e.currentTarget.querySelector('input').focus()}>
         {value.map((s, i) => (
           <span key={s} className={`chip ${kind}`}>
             {s}
@@ -31,11 +31,14 @@ export default function ChipInput({ labelId, kind, value, onChange, suggestions 
           </span>
         ))}
         <input
+          ref={inputRef}
           type="text"
           maxLength={30}
           placeholder="Add a skill…"
           list="skillList"
           aria-labelledby={labelId}
+          aria-invalid={invalid || undefined}
+          aria-describedby={describedBy}
           value={text}
           onChange={e => setText(e.target.value)}
           onBlur={commit}

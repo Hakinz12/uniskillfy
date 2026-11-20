@@ -1,7 +1,124 @@
 import { useEffect, useRef, useState } from 'react';
 import { Avatar, SwapIcon } from './ui.jsx';
-import { badgeList, levelInfo, points } from '../data.js';
+import { badgeList, computeStreak, goalProgress, levelInfo, points, weekStart } from '../data.js';
 import { downloadCalendarEvent } from '../calendar.js';
+import { useToast } from './ui.jsx';
+
+const CUSTOM_SKILL = '__custom__';
+
+function GoalsCard({ profile, goals, requests, onAddGoal, onRemoveGoal }) {
+  const [skillChoice, setSkillChoice] = useState('');
+  const [customSkill, setCustomSkill] = useState('');
+  const [target, setTarget] = useState('3');
+  const selectedSkill = skillChoice || profile?.wants?.[0] || CUSTOM_SKILL;
+
+  function addGoal(e) {
+    e.preventDefault();
+    const skill = (selectedSkill === CUSTOM_SKILL ? customSkill : selectedSkill).trim();
+    if (!skill) return;
+    onAddGoal({
+      id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+      skill,
+      target: Number(target),
+      createdAt: Date.now()
+    });
+    setCustomSkill('');
+    setTarget('3');
+  }
+
+  return (
+    <section className="card goals-card" aria-labelledby="goalsTitle">
+      <h3 id="goalsTitle">Learning goals</h3>
+      {goals.length ? (
+        <ul className="goal-list">
+          {goals.map(goal => {
+            const progress = goalProgress(goal, requests);
+            return (
+              <li className="goal-item" key={goal.id}>
+                <div className="goal-heading">
+                  <strong>{goal.skill}</strong>
+                  {progress.complete && <span className="goal-reached">Goal reached</span>}
+                </div>
+                <p>{Math.min(progress.completed, goal.target)} of {goal.target} sessions</p>
+                <div
+                  className="goal-progress"
+                  role="progressbar"
+                  aria-label={`${goal.skill} goal progress`}
+                  aria-valuenow={Math.min(progress.completed, goal.target)}
+                  aria-valuemin="0"
+                  aria-valuemax={goal.target}
+                >
+                  <span style={{ width: `${Math.min(100, (progress.completed / goal.target) * 100)}%` }} />
+                </div>
+                <button className="btn ghost small" type="button" aria-label={`Remove ${goal.skill} goal`} onClick={() => onRemoveGoal(goal.id)}>Remove</button>
+              </li>
+            );
+          })}
+        </ul>
+      ) : <p className="muted">Add a goal to keep your learning on track.</p>}
+
+      <form className="goal-form" onSubmit={addGoal}>
+        <label className="field">
+          <span>Skill</span>
+          <select aria-label="Goal skill" value={selectedSkill} onChange={e => setSkillChoice(e.target.value)} required>
+            {profile?.wants?.map(skill => <option key={skill} value={skill}>{skill}</option>)}
+            <option value={CUSTOM_SKILL}>Other (enter a skill)</option>
+          </select>
+        </label>
+        {selectedSkill === CUSTOM_SKILL && (
+          <label className="field">
+            <span>Custom skill</span>
+            <input aria-label="Custom skill" maxLength={60} value={customSkill} onChange={e => setCustomSkill(e.target.value)} required />
+          </label>
+        )}
+        <label className="field">
+          <span>Sessions to complete</span>
+          <select aria-label="Goal target" value={target} onChange={e => setTarget(e.target.value)}>
+            {[1, 2, 3, 4, 5].map(count => <option key={count} value={count}>{count} {count === 1 ? 'session' : 'sessions'}</option>)}
+          </select>
+        </label>
+        <button className="btn primary small" type="submit">Add goal</button>
+      </form>
+    </section>
+  );
+}
+
+function StreakCard({ requests, now }) {
+  const streak = computeStreak(requests, now);
+  const doneWeeks = new Set(
+    requests.filter(request => request.status === 'done')
+      .map(request => weekStart(request.doneAt ?? request.ts).getTime())
+  );
+  const currentWeek = weekStart(now);
+  const recentWeeks = Array.from({ length: 6 }, (_, index) => {
+    const date = new Date(currentWeek);
+    date.setDate(date.getDate() - (5 - index) * 7);
+    return { date, active: doneWeeks.has(date.getTime()) };
+  });
+
+  return (
+    <section className="card streak-card" aria-labelledby="streakTitle">
+      <h3 id="streakTitle">Weekly streak</h3>
+      <div className="streak-stats">
+        <p><strong>{streak.current}</strong><span>week{streak.current === 1 ? '' : 's'} current</span></p>
+        <p><strong>{streak.best}</strong><span>week{streak.best === 1 ? '' : 's'} best</span></p>
+      </div>
+      <p className="streak-message">
+        {streak.thisWeekDone ? "You're on track this week" : streak.current ? 'Complete a session this week to keep your streak alive' : 'Complete a session this week to start a streak'}
+      </p>
+      <ol className="streak-weeks" aria-label="Activity for the last six weeks">
+        {recentWeeks.map(({ date, active }) => (
+          <li key={date.getTime()}>
+            <span className={active ? 'streak-dot active' : 'streak-dot'} aria-hidden="true" />
+            <span className="sr-only">
+              Week of {date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}: {active ? 'session completed' : 'no session'}
+            </span>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
 
 function formatSession(session) {
   const date = new Date(session.start);
@@ -188,10 +305,22 @@ function Request({ r, onAdvance, onCancel, onSchedule, onSaveReview }) {
   );
 }
 
-export default function Swaps({ profile, requests, onAdvance, onCancel, onSchedule, onSaveReview }) {
+export default function Swaps({ profile, requests, goals = [], onAdvance, onCancel, onSchedule, onSaveReview, onAddGoal, onRemoveGoal }) {
   const pts = points(requests);
   const lvl = levelInfo(pts);
-  const badges = badgeList(profile, requests);
+  const badges = badgeList(profile, requests, goals);
+  const toast = useToast();
+  const completedGoals = useRef(new Set(goals.filter(goal => goalProgress(goal, requests).complete).map(goal => goal.id)));
+
+  useEffect(() => {
+    const current = new Set();
+    goals.forEach(goal => {
+      if (!goalProgress(goal, requests).complete) return;
+      current.add(goal.id);
+      if (!completedGoals.current.has(goal.id)) toast(`${goal.skill} goal reached!`);
+    });
+    completedGoals.current = current;
+  }, [goals, requests, toast]);
 
   return (
     <section className="section tinted" id="swaps">
@@ -221,7 +350,11 @@ export default function Swaps({ profile, requests, onAdvance, onCancel, onSchedu
             </ul>
           </div>
 
-          <div>
+          <div className="swaps-requests">
+            <div className="swap-progress-cards">
+              <GoalsCard profile={profile} goals={goals} requests={requests} onAddGoal={onAddGoal} onRemoveGoal={onRemoveGoal} />
+              <StreakCard requests={requests} now={Date.now()} />
+            </div>
             <ul className="req-list">
               {requests.map(r => <Request key={r.id} r={r} onAdvance={onAdvance} onCancel={onCancel} onSchedule={onSchedule} onSaveReview={onSaveReview} />)}
             </ul>

@@ -28,6 +28,13 @@ export default function Browse({ profile, requests, onRequest }) {
       .map(item => item.member);
   }, [everyone, view, cat, query, sort, requests]);
 
+  function clearFilters() {
+    setQuery('');
+    setCat('All');
+    setView('teach');
+    setSort('current');
+  }
+
   return (
     <section className="section" id="browse">
       <div className="wrap">
@@ -64,7 +71,13 @@ export default function Browse({ profile, requests, onRequest }) {
         <div className="grid">
           {list.map(c => <CommunityCard key={c.id} member={c} view={view} onRequest={onRequest} requests={requests} />)}
         </div>
-        {!list.length && <p className="none">No one matches that yet. Be the first. Add yourself above.</p>}
+        {!list.length && (
+          <div className="empty slim">
+            <h3>No search results</h3>
+            <p>No one matches that yet. Try another search or clear your filters.</p>
+            <button className="btn ghost small" type="button" onClick={clearFilters}>Clear filters</button>
+          </div>
+        )}
       </div>
     </section>
   );

@@ -1,14 +1,20 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import App from './App.jsx';
-import { SEED, computeMatches, levelInfo, points, ratingInfo } from './data.js';
+import ErrorBoundary from './components/ErrorBoundary.jsx';
+import { SEED, badgeList, computeMatches, computeStreak, goalProgress, levelInfo, points, ratingInfo, weekStart } from './data.js';
 import { buildCalendarContent } from './calendar.js';
 import { buildShareText } from './components/SwapCard.jsx';
 
 beforeEach(() => {
   cleanup();
   localStorage.clear();
+  window.history.replaceState({}, '', '/');
 });
+
+function Broken() {
+  throw new Error('test render failure');
+}
 
 describe('matching logic', () => {
   const profile = { teaches: ['Python', 'Excel'], wants: ['Guitar', 'French'], when: 'Weekday evenings', mode: 'Online' };
@@ -47,9 +53,174 @@ describe('matching logic', () => {
     expect(rating.count).toBe(14);
     expect(rating.average).toBeCloseTo(4.69, 2);
   });
+
+  it('counts completed learning sessions toward goals using same-skill matching', () => {
+    const goal = { skill: 'Python', target: 2 };
+    const progress = goalProgress(goal, [
+      { status: 'done', learn: 'Python basics' },
+      { status: 'accepted', learn: 'Python' },
+      { status: 'done', learn: 'Guitar' }
+    ]);
+    expect(progress).toEqual({ completed: 1, complete: false });
+    expect(goalProgress(goal, [
+      { status: 'done', learn: 'Python' },
+      { status: 'done', learn: 'Python practice' }
+    ])).toEqual({ completed: 2, complete: true });
+  });
+
+  it('starts weeks on local Monday for both Sunday and Monday dates', () => {
+    const sunday = weekStart(new Date(2026, 1, 1, 18, 30));
+    const monday = weekStart(new Date(2026, 1, 2, 9, 15));
+    expect([sunday.getFullYear(), sunday.getMonth(), sunday.getDate(), sunday.getHours()]).toEqual([2026, 0, 26, 0]);
+    expect([monday.getFullYear(), monday.getMonth(), monday.getDate(), monday.getHours()]).toEqual([2026, 1, 2, 0]);
+  });
+
+  it('computes a live streak, resets it after a missed week, and handles no history', () => {
+    const done = day => ({ status: 'done', doneAt: new Date(2026, 2, day, 12).getTime() });
+    const now = new Date(2026, 2, 18, 12).getTime();
+    expect(computeStreak([done(3), done(10)], now)).toEqual({ current: 2, best: 2, thisWeekDone: false });
+    expect(computeStreak([done(3)], now)).toEqual({ current: 0, best: 1, thisWeekDone: false });
+    expect(computeStreak([], now)).toEqual({ current: 0, best: 0, thisWeekDone: false });
+  });
+
+  it('unlocks goal and streak badges', () => {
+    const now = new Date(2026, 2, 18, 12).getTime();
+    const requests = [3, 10, 17].map(day => ({
+      status: 'done',
+      learn: 'Python',
+      doneAt: new Date(2026, 2, day, 12).getTime()
+    }));
+    const badges = badgeList(null, requests, [{ id: 'python', skill: 'Python', target: 1 }], now);
+    expect(badges.find(badge => badge.name === 'Goal getter').on).toBe(true);
+    expect(badges.find(badge => badge.name === 'On a roll').on).toBe(true);
+  });
 });
 
 describe('app flow', () => {
+  it('loads older saved state without goals', () => {
+    localStorage.setItem('campus-skill-swap.react.v1', JSON.stringify({
+      profile: null,
+      requests: []
+    }));
+    render(<App />);
+    expect(screen.getByText('Learning goals')).toBeTruthy();
+    expect(JSON.parse(localStorage.getItem('campus-skill-swap.react.v1')).goals).toEqual([]);
+  });
+
+  it('adds and removes a learning goal', () => {
+    localStorage.setItem('campus-skill-swap.react.v1', JSON.stringify({
+      profile: {
+        name: 'Test Student', college: 'Test Campus', teaches: ['Python'], wants: ['Guitar'],
+        when: 'Weekday evenings', mode: 'Online', bio: ''
+      },
+      requests: []
+    }));
+    render(<App />);
+    fireEvent.change(screen.getByLabelText('Goal target'), { target: { value: '2' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Add goal' }));
+    expect(within(document.querySelector('.goal-list')).getByText('Guitar')).toBeTruthy();
+    expect(screen.getByText('0 of 2 sessions')).toBeTruthy();
+    const progress = screen.getByRole('progressbar', { name: 'Guitar goal progress' });
+    expect(progress.getAttribute('aria-valuenow')).toBe('0');
+    expect(progress.getAttribute('aria-valuemin')).toBe('0');
+    expect(progress.getAttribute('aria-valuemax')).toBe('2');
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Guitar goal' }));
+    expect(screen.queryByRole('progressbar', { name: 'Guitar goal progress' })).toBeNull();
+  });
+
+  it('shows a toast and reached state when a goal is completed', async () => {
+    render(<App />);
+    fireEvent.click(screen.getByText('Fill with example data'));
+    fireEvent.click(screen.getAllByText('Request swap')[0]);
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Request a swap' })).getByText('Send request'));
+    fireEvent.click(screen.getByText('They accepted'));
+    fireEvent.change(screen.getByLabelText('Goal target'), { target: { value: '1' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Add goal' }));
+    fireEvent.click(screen.getByText('Mark session done'));
+    expect(await screen.findByText('Guitar goal reached!')).toBeTruthy();
+    expect(screen.getByText('Goal reached')).toBeTruthy();
+  });
+
+  it('suggests teachable skills when no matches are found and reruns matching', () => {
+    localStorage.setItem('campus-skill-swap.react.v1', JSON.stringify({
+      profile: {
+        name: 'Test Student', college: 'Test Campus', teaches: ['Unlisted skill'],
+        wants: ['Another unlisted skill'], when: 'Weekday evenings', mode: 'Online', bio: ''
+      },
+      requests: []
+    }));
+    render(<App />);
+    expect(screen.getByText('No matches yet')).toBeTruthy();
+    const suggestions = screen.getByRole('group', { name: 'Skills students can teach' });
+    expect(within(suggestions).getByRole('button', { name: '+ Python' })).toBeTruthy();
+    fireEvent.click(within(suggestions).getByRole('button', { name: '+ Python' }));
+    expect([...document.querySelectorAll('.chip.want')].some(chip => chip.textContent.includes('Python'))).toBe(true);
+    expect(screen.queryByText('No matches yet')).toBeNull();
+    expect(screen.getByText(/match(?:es)? for Test/)).toBeTruthy();
+  });
+
+  it('shows field-level validation errors and focuses the first invalid field', () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: 'Find matches' }));
+    expect(document.activeElement).toBe(screen.getByLabelText('Your name'));
+    expect(screen.getByText('Tell us your name.').getAttribute('role')).toBe('alert');
+    expect(screen.getByText('Add your college or campus.').getAttribute('role')).toBe('alert');
+    expect(screen.getByText('Add at least one skill you can teach.').getAttribute('role')).toBe('alert');
+    expect(screen.getByText('Add at least one skill you want to learn.').getAttribute('role')).toBe('alert');
+    expect(screen.getByLabelText('Your name').getAttribute('aria-invalid')).toBe('true');
+    expect(screen.getByLabelText('Your name').getAttribute('aria-describedby')).toBe('nameError');
+
+    fireEvent.change(screen.getByLabelText('Your name'), { target: { value: 'Ada' } });
+    expect(screen.queryByText('Tell us your name.')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Find matches' }));
+    expect(document.activeElement).toBe(screen.getByLabelText('College / campus'));
+    fireEvent.change(screen.getByLabelText('College / campus'), { target: { value: 'Campus' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Find matches' }));
+    expect(document.activeElement).toBe(screen.getAllByPlaceholderText('Add a skill…')[0]);
+    fireEvent.click(document.querySelector('.field .suggest button'));
+    expect(screen.queryByText('Add at least one skill you can teach.')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Find matches' }));
+    expect(document.activeElement).toBe(screen.getAllByPlaceholderText('Add a skill…')[1]);
+  });
+
+  it('shows the error boundary fallback', () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      render(<ErrorBoundary><Broken /></ErrorBoundary>);
+      expect(screen.getByRole('alert').textContent).toContain('Something went wrong');
+      expect(screen.getByRole('button', { name: 'Reload' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Clear my saved data and reload' })).toBeTruthy();
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
+  it('recovers corrupt saved JSON to default state', () => {
+    localStorage.setItem('campus-skill-swap.react.v1', '{broken json');
+    render(<App />);
+    expect(screen.getByText('Your matches will show up here')).toBeTruthy();
+    expect(JSON.parse(localStorage.getItem('campus-skill-swap.react.v1'))).toEqual({ profile: null, requests: [], goals: [] });
+  });
+
+  it('shows a 404 view for paths outside the app root', () => {
+    window.history.replaceState({}, '', '/missing-page#section');
+    render(<App />);
+    expect(screen.getByRole('heading', { name: 'Page not found' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Go to Campus Skill Swap' }).getAttribute('href')).toBe('/');
+  });
+
+  it('shows a dismissible warning when localStorage cannot be written', () => {
+    const setItemSpy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('blocked'); });
+    try {
+      render(<App />);
+      expect(screen.getByRole('alert').textContent).toContain("Your progress can't be saved in this browser mode.");
+      fireEvent.click(screen.getByRole('button', { name: 'Dismiss storage warning' }));
+      expect(screen.queryByText("Your progress can't be saved in this browser mode.")).toBeNull();
+    } finally {
+      setItemSpy.mockRestore();
+    }
+  });
+
   it('auto-starts the tour on first visit', () => {
     render(<App autoStartTour />);
     expect(screen.getByRole('dialog', { name: 'Welcome' })).toBeTruthy();
@@ -133,6 +304,7 @@ describe('app flow', () => {
     fireEvent.click(screen.getByText('They accepted'));
     fireEvent.click(screen.getByText('Mark session done'));
     expect(document.querySelector('.ring span').textContent).toBe('100');
+    expect(JSON.parse(localStorage.getItem('campus-skill-swap.react.v1')).requests[0].doneAt).toEqual(expect.any(Number));
     expect(document.querySelector('.level-name').textContent).toBe('Swapper');
   });
 
@@ -214,7 +386,7 @@ describe('app flow', () => {
   it('validates the form', () => {
     render(<App />);
     fireEvent.click(screen.getByRole('button', { name: 'Find matches' }));
-    expect(screen.getByRole('alert').textContent).toBe('Tell us your name.');
+    expect(screen.getByText('Tell us your name.').textContent).toBe('Tell us your name.');
   });
 
   it('asks you to add skills before requesting a swap', () => {
@@ -233,6 +405,10 @@ describe('app flow', () => {
     fireEvent.change(screen.getByLabelText('Search students'), { target: { value: '' } });
     fireEvent.click(screen.getByText('Fitness'));
     expect(document.querySelectorAll('#browse .m-card').length).toBe(2); // Diego, Aisha
+    fireEvent.change(screen.getByLabelText('Search students'), { target: { value: 'no-such-student' } });
+    expect(screen.getByText('No search results')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Clear filters' }));
+    expect(document.querySelectorAll('#browse .m-card').length).toBe(SEED.length);
   });
 
   it('adds and removes skill chips, and persists the profile', () => {

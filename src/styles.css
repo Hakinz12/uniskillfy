@@ -251,6 +251,15 @@ dialog::backdrop { background: rgba(15, 13, 28, .55); backdrop-filter: blur(3px)
 .dlg-body h3 { font-size: 1.5rem; }
 .dlg-sub { color: var(--muted); margin-top: -8px; }
 
+.tour-layer { position: fixed; inset: 0; z-index: 80; pointer-events: none; }
+.tour-shade { z-index: 80; pointer-events: auto; }
+.tour-spotlight { position: fixed; z-index: 81; border: 2px solid var(--accent); border-radius: 14px; box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); pointer-events: auto; }
+.tour-popover { position: fixed; z-index: 82; display: grid; gap: 12px; width: min(380px, calc(100vw - 24px)); max-height: min(80vh, 520px); overflow: auto; padding: 22px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--ink); box-shadow: var(--shadow); pointer-events: auto; }
+.tour-popover h2 { font-size: 1.5rem; }
+.tour-count { color: var(--brand); font-size: .85rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+.tour-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+.tour-actions button:first-child { margin-right: auto; }
+
 .swap-share-trigger { display: flex; justify-content: flex-end; }
 .swap-dialog { width: min(620px, calc(100% - 32px)); max-height: min(92vh, 900px); overflow-y: auto; }
 .swap-dialog-body { gap: 18px; }
@@ -302,6 +311,7 @@ dialog::backdrop { background: rgba(15, 13, 28, .55); backdrop-filter: blur(3px)
   .swap-share-skills { grid-template-columns: 1fr; }
   .swap-share-actions { justify-content: stretch; }
   .sort-control { width: 100%; }
+  .tour-popover { max-height: min(45vh, 340px); padding: 18px; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }

@@ -42,6 +42,32 @@ export function useAppState() {
   return { ...state, saveProfile, addRequest, advance, schedule, saveReview, cancel, reset };
 }
 
+const TOUR_SEEN = 'tourSeen';
+
+export function useTour(autoStart = true) {
+  const [open, setOpen] = useState(false);
+  const [step, setStep] = useState(0);
+
+  useEffect(() => {
+    if (!autoStart) return;
+    try {
+      if (localStorage.getItem(TOUR_SEEN) === 'true') return;
+    } catch { /* start the tour if storage is unavailable */ }
+    setOpen(true);
+  }, [autoStart]);
+
+  const start = useCallback(() => {
+    setStep(0);
+    setOpen(true);
+  }, []);
+  const finish = useCallback(() => {
+    try { localStorage.setItem(TOUR_SEEN, 'true'); } catch { /* storage may be blocked */ }
+    setOpen(false);
+  }, []);
+
+  return { open, step, setStep, start, finish };
+}
+
 export function useTheme() {
   const [theme, setTheme] = useState(() => {
     try {

@@ -50,6 +50,48 @@ describe('matching logic', () => {
 });
 
 describe('app flow', () => {
+  it('auto-starts the tour on first visit', () => {
+    render(<App autoStartTour />);
+    expect(screen.getByRole('dialog', { name: 'Welcome' })).toBeTruthy();
+  });
+
+  it('does not auto-start the tour when it has already been seen', () => {
+    localStorage.setItem('tourSeen', 'true');
+    render(<App autoStartTour />);
+    expect(screen.queryByRole('dialog', { name: 'Welcome' })).toBeNull();
+  });
+
+  it('supports Next, Back, and Skip and saves tourSeen', () => {
+    render(<App autoStartTour={false} />);
+    const trigger = screen.getAllByRole('link', { name: 'Take the tour' })[0];
+    trigger.focus();
+    fireEvent.click(trigger);
+    let dialog = screen.getByRole('dialog', { name: 'Welcome' });
+    expect(document.activeElement).toBe(within(dialog).getByRole('heading', { name: 'Welcome' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
+    expect(screen.getByRole('dialog', { name: 'Tell us your trade' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    expect(screen.getByRole('dialog', { name: 'Get matched' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    dialog = screen.getByRole('dialog', { name: 'Tell us your trade' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Skip' }));
+    expect(screen.queryByRole('dialog', { name: 'Tell us your trade' })).toBeNull();
+    expect(localStorage.getItem('tourSeen')).toBe('true');
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it('traps keyboard focus and skips the tour on Escape', () => {
+    render(<App autoStartTour />);
+    const dialog = screen.getByRole('dialog', { name: 'Welcome' });
+    fireEvent.keyDown(dialog, { key: 'Tab', shiftKey: true });
+    expect(document.activeElement).toBe(within(dialog).getByRole('button', { name: 'Next' }));
+    fireEvent.keyDown(dialog, { key: 'Tab' });
+    expect(document.activeElement).toBe(within(dialog).getByRole('button', { name: 'Skip' }));
+    fireEvent.keyDown(dialog, { key: 'Escape' });
+    expect(screen.queryByRole('dialog', { name: 'Welcome' })).toBeNull();
+    expect(localStorage.getItem('tourSeen')).toBe('true');
+  });
+
   it('renders the community', () => {
     render(<App />);
     expect(screen.getByText('Browse the community')).toBeTruthy();

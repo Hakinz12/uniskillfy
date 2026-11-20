@@ -1,7 +1,7 @@
 import { SwapIcon } from './ui.jsx';
 import { useCountUp } from '../hooks/useAppState.js';
 
-export function Nav({ openCount, onToggleTheme }) {
+export function Nav({ openCount, onToggleTheme, onStartTour }) {
   return (
     <header className="nav">
       <div className="wrap nav-inner">
@@ -14,6 +14,7 @@ export function Nav({ openCount, onToggleTheme }) {
           <a href="#match">Find my swap</a>
           <a href="#browse">Browse</a>
           <a href="#swaps">My swaps {openCount > 0 && <span className="pill">{openCount}</span>}</a>
+          <a href="#top" onClick={e => { e.preventDefault(); onStartTour(); }}>Take the tour</a>
         </nav>
         <button className="icon-btn" onClick={onToggleTheme} aria-label="Toggle dark mode" title="Toggle dark mode">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -85,12 +86,13 @@ export function HowItWorks() {
   );
 }
 
-export function Footer() {
+export function Footer({ onStartTour }) {
   return (
     <footer className="footer">
       <div className="wrap foot-inner">
         <p><b>Campus Skill Swap</b> · A student-built peer learning project for the Build Your Own Website hackathon.</p>
         <p className="muted">Demo data is fictional. Your profile and swaps are stored only in your browser.</p>
+        <p><a href="#top" onClick={e => { e.preventDefault(); onStartTour(); }}>Take the tour</a></p>
       </div>
     </footer>
   );

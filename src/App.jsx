@@ -4,13 +4,15 @@ import Match from './components/Match.jsx';
 import Browse from './components/Browse.jsx';
 import Swaps from './components/Swaps.jsx';
 import RequestDialog from './components/RequestDialog.jsx';
+import Tour from './components/Tour.jsx';
 import { ToastProvider, useToast } from './components/ui.jsx';
-import { useAppState, useTheme } from './hooks/useAppState.js';
+import { useAppState, useTheme, useTour } from './hooks/useAppState.js';
 import { BASE_SWAPS, CATS, SEED, norm } from './data.js';
 
-function Site() {
+function Site({ autoStartTour }) {
   const app = useAppState();
   const [, toggleTheme] = useTheme();
+  const tour = useTour(autoStartTour);
   const [target, setTarget] = useState(null);
   const toast = useToast();
   const { profile, requests } = app;
@@ -50,7 +52,7 @@ function Site() {
   return (
     <>
       <a className="skip" href="#main">Skip to content</a>
-      <Nav openCount={openCount} onToggleTheme={toggleTheme} />
+      <Nav openCount={openCount} onToggleTheme={toggleTheme} onStartTour={tour.start} />
       <main id="main">
         <Hero members={members} skills={skills} swaps={swaps} />
         <HowItWorks />
@@ -58,19 +60,20 @@ function Site() {
         <Browse profile={profile} requests={requests} onRequest={openRequest} />
         <Swaps profile={profile} requests={requests} onAdvance={advance} onCancel={app.cancel} onSchedule={app.schedule} onSaveReview={app.saveReview} />
       </main>
-      <Footer />
+      <Footer onStartTour={tour.start} />
       <datalist id="skillList">
         {Object.values(CATS).flat().map(s => <option key={s} value={s} />)}
       </datalist>
       <RequestDialog target={target} profile={profile} onSend={send} onClose={() => setTarget(null)} />
+      <Tour open={tour.open} step={tour.step} onStepChange={tour.setStep} onClose={tour.finish} />
     </>
   );
 }
 
-export default function App() {
+export default function App({ autoStartTour = import.meta.env.MODE !== 'test' }) {
   return (
     <ToastProvider>
-      <Site />
+      <Site autoStartTour={autoStartTour} />
     </ToastProvider>
   );
 }

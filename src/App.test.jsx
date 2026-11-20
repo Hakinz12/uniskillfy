@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import App from './App.jsx';
 import { SEED, computeMatches, levelInfo, points } from './data.js';
 import { buildCalendarContent } from './calendar.js';
+import { buildShareText } from './components/SwapCard.jsx';
 
 beforeEach(() => {
   cleanup();
@@ -41,6 +42,24 @@ describe('app flow', () => {
     expect(screen.getByText('Amara Okafor', { selector: '#browse strong' })).toBeTruthy();
   });
 
+  it('opens the share card dialog after saving a profile', () => {
+    render(<App />);
+    fireEvent.click(screen.getByText('Fill with example data'));
+    fireEvent.click(screen.getByRole('button', { name: 'Share my swap card' }));
+    const dialog = screen.getByRole('dialog', { name: 'Your SwapSkill card' });
+    expect(dialog.open).toBe(true);
+    expect(within(dialog).getByText('Tolu Adebayo')).toBeTruthy();
+  });
+
+  it('builds the share message with the current page URL', () => {
+    expect(buildShareText({
+      teaches: ['Python', 'Excel'],
+      wants: ['Guitar']
+    }, 'https://campus.example/swap')).toBe(
+      'I teach Python and Excel. I want to learn Guitar. Swap skills with me on Campus Skill Swap: https://campus.example/swap'
+    );
+  });
+
   it('fills demo data, shows matches, and runs a swap end to end', () => {
     render(<App />);
     fireEvent.click(screen.getByText('Fill with example data'));
@@ -49,7 +68,7 @@ describe('app flow', () => {
 
     // request a swap from the first match
     fireEvent.click(screen.getAllByText('Request swap')[0]);
-    const dlg = document.querySelector('dialog');
+    const dlg = screen.getByRole('dialog', { name: 'Request a swap' });
     expect(dlg.open).toBe(true);
     fireEvent.click(within(dlg).getByText('Send request'));
     expect(document.querySelectorAll('.req').length).toBe(1);
@@ -65,7 +84,7 @@ describe('app flow', () => {
     render(<App />);
     fireEvent.click(screen.getByText('Fill with example data'));
     fireEvent.click(screen.getAllByText('Request swap')[0]);
-    fireEvent.click(within(document.querySelector('dialog')).getByText('Send request'));
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Request a swap' })).getByText('Send request'));
     fireEvent.click(screen.getByText('They accepted'));
     fireEvent.click(screen.getByRole('button', { name: 'Schedule session' }));
 

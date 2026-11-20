@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import ChipInput from './ChipInput.jsx';
 import { MatchCard } from './Cards.jsx';
+import SwapCard from './SwapCard.jsx';
 import { useToast } from './ui.jsx';
 import { MODE_OPTIONS, SUGGEST_TEACH, SUGGEST_WANT, WHEN_OPTIONS, computeMatches } from '../data.js';
 
@@ -116,6 +117,7 @@ export default function Match({ profile, onSave, onReset, onRequest }) {
                 <button className="btn ghost small" type="button" onClick={demo}>Fill with example data</button>
               </div>
             )}
+            {profile && <div className="swap-share-trigger"><SwapCard profile={profile} /></div>}
             {profile && !matches.length && (
               <div className="empty">
                 <h3>No matches yet</h3>

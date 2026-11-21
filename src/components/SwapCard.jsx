@@ -55,7 +55,7 @@ function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 2) {
 }
 
 function drawSkillPills(ctx, skills, x, y, maxWidth) {
-  ctx.font = '700 25px "DM Sans", sans-serif';
+  ctx.font = '700 25px "Poppins", sans-serif';
   let rowX = x;
   let rowY = y;
   let rowHeight = 0;
@@ -98,9 +98,9 @@ function drawCard(ctx, profile, brandIcon) {
   ctx.fill();
   ctx.drawImage(brandIcon, 68, 72, 60, 60);
   ctx.fillStyle = '#fff';
-  ctx.font = '800 34px "Bricolage Grotesque", sans-serif';
+  ctx.font = '700 34px "Poppins", sans-serif';
   ctx.fillText('Uniskillfy', 150, 112);
-  ctx.font = '500 19px "DM Sans", sans-serif';
+  ctx.font = '500 19px "Poppins", sans-serif';
   ctx.fillStyle = 'rgba(255,255,255,.82)';
   ctx.fillText('CAMPUS SKILL EXCHANGE', 152, 148);
 
@@ -112,16 +112,16 @@ function drawCard(ctx, profile, brandIcon) {
   ctx.arc(154, 345, 55, 0, Math.PI * 2);
   ctx.fill();
   ctx.fillStyle = '#fff';
-  ctx.font = '800 36px "Bricolage Grotesque", sans-serif';
+  ctx.font = '700 36px "Poppins", sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText(initials(profile.name), 154, 358);
   ctx.textAlign = 'left';
 
   ctx.fillStyle = '#24165f';
-  ctx.font = '800 59px "Bricolage Grotesque", sans-serif';
+  ctx.font = '700 59px "Poppins", sans-serif';
   let y = drawWrappedText(ctx, profile.name, 120, 470, 840, 70);
   ctx.fillStyle = '#62607a';
-  ctx.font = '500 29px "DM Sans", sans-serif';
+  ctx.font = '500 29px "Poppins", sans-serif';
   y = drawWrappedText(ctx, profile.college, 122, y + 6, 820, 40);
 
   y += 34;
@@ -134,12 +134,12 @@ function drawCard(ctx, profile, brandIcon) {
 
   y += 62;
   ctx.fillStyle = CORAL;
-  ctx.font = '800 24px "DM Sans", sans-serif';
+  ctx.font = '800 24px "Poppins", sans-serif';
   ctx.fillText('I TEACH', 122, y);
   y = drawSkillPills(ctx, profile.teaches, 122, y + 24, 836) + 52;
 
   ctx.fillStyle = PURPLE;
-  ctx.font = '800 24px "DM Sans", sans-serif';
+  ctx.font = '800 24px "Poppins", sans-serif';
   ctx.fillText('I WANT TO LEARN', 122, y);
   y = drawSkillPills(ctx, profile.wants, 122, y + 24, 836);
 
@@ -147,7 +147,7 @@ function drawCard(ctx, profile, brandIcon) {
   roundedRect(ctx, 122, 1125, 836, 66, 22);
   ctx.fill();
   ctx.fillStyle = '#fff';
-  ctx.font = '700 24px "DM Sans", sans-serif';
+  ctx.font = '700 24px "Poppins", sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText('Teach what you know. Learn what you love.', 540, 1167);
   ctx.textAlign = 'left';

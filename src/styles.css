@@ -12,8 +12,8 @@
   --warn: #c98200;
   --shadow: 0 1px 2px rgba(23, 20, 43, .05), 0 12px 32px -12px rgba(60, 40, 160, .18);
   --radius: 18px;
-  --display: "Bricolage Grotesque", "DM Sans", system-ui, sans-serif;
-  --body: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --display: "Poppins", sans-serif;
+  --body: "Poppins", sans-serif;
 }
 :root[data-theme="dark"] {
   --bg: #0f0d1c;
@@ -40,7 +40,7 @@ body {
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
 }
-h1, h2, h3 { font-family: var(--display); line-height: 1.08; margin: 0; letter-spacing: -.02em; }
+h1, h2, h3 { font-family: "Poppins", sans-serif; font-weight: 700; line-height: 1.1; margin: 0; letter-spacing: -.02em; }
 p { margin: 0; }
 a { color: inherit; }
 .wrap { width: min(1120px, 100% - 40px); margin-inline: auto; }

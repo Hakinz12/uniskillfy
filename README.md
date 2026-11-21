@@ -1,60 +1,103 @@
 # Uniskillfy
 
 **Swap skills on campus.**
-Uniskillfy helps students list skills they can teach and skills they want to learn, get ranked matches (mutual swaps first), send swap requests, and earn points and badges as they complete sessions.
 
-Built for the **Build Your Own Website** hackathon by Roxten Studios.
+[Live demo](https://uniskillfy.vercel.app) | [Demo video](DEMO_VIDEO_LINK) | [GitHub](https://github.com/hakinz12/uniskillfy)
+
+![Uniskillfy home page](docs/screenshot-home.png)
+
+![Uniskillfy matches](docs/screenshot-matches.png)
+
+![Uniskillfy swap card](docs/screenshot-swap-card.png)
+
+## Why it exists
+
+Students often pay for tutors or give up on learning something that a classmate could teach. Uniskillfy makes those connections visible and turns each exchange into an even trade. There is no money involved: students share what they know and learn something useful in return.
 
 ## Features
 
-- **Smart matcher**: scores every student by how well your teach/learn lists line up, flags *mutual swaps* (you each have what the other wants), explains why, and adds small bonuses for matching availability and session style.
-- **Chip-based skill input** with suggestions and autocomplete.
-- **Browse the community**: search by skill, name or college; filter by category; toggle between "who can teach" and "who wants to learn".
-- **Ratings and reviews**: review completed swaps, see community ratings, and sort Browse by top rated. Seeded ratings are illustrative demo data, not real student feedback.
-- **Swap requests**: pick what you teach and what you learn, add a message, and track status (pending, accepted, done).
-- **Gamification**: points, five levels, and badges.
-- **Dark mode**, responsive layout, keyboard accessible, respects reduced-motion settings.
-- Your profile and swaps are saved in your browser (`localStorage`). No backend, no sign-up.
-- Installable PWA with offline app shell and cached Google Fonts.
+- Ranked skill matching with mutual swaps placed first.
+- Community browse with search, category filters, and a top-rated sort.
+- Swap requests with pending, accepted, and done statuses.
+- Session scheduling with date, start time, duration, and `.ics` calendar downloads.
+- Ratings and reviews for completed swaps, including seeded demo ratings.
+- Learning goals and weekly swap streaks with progress cards and badges.
+- A shareable swap card rendered as a 1080x1350 PNG for sharing or downloading.
+- Points, five levels, and gamified badges for completed swaps and participation.
+- A guided, one-time tour with replay links in the navigation and footer.
+- Installable, offline PWA behavior with service-worker caching and install prompts.
+- Light and dark themes.
+- Polished empty states, inline form errors, an error boundary, storage recovery, and a 404 page.
+- Profile and swap data saved in the browser with `localStorage`, with no backend or sign-up.
+
+## How the matcher works
+
+`computeMatches` in `src/data.js` compares what each student teaches with what the user wants to learn, and what the user teaches with what the student wants to learn. It calculates overlap in both directions, ranks mutual matches first, and sorts other matches by score. Availability and session-style compatibility add small bonuses to the final score.
 
 ## Tech
 
-React 18 + Vite. Vitest and Testing Library for tests. No UI framework; hand-written CSS with design tokens and a light/dark theme.
+- React 18
+- Vite
+- vite-plugin-pwa
+- Vitest and Testing Library
+- Hand-written CSS with light and dark themes
+- Google Fonts: Poppins
+- Deployed on Vercel
 
-```
-src/
-  data.js                  demo students and ratings, matching algorithm, points/levels/badges
-  hooks/useAppState.js     persisted state, theme, count-up animation
-  components/              Layout, Match, ChipInput, Browse, Cards, Swaps, RequestDialog, ui
-  App.jsx                  page assembly + request flow
-  App.test.jsx             matching logic and user-flow tests
-```
-
-## Run it
+## Run it locally
 
 ```bash
 npm install
-npm run dev      # http://localhost:5173
-npm test         # run the test suite
-npm run build    # production build in dist/
+npm run dev
+npm test
+npm run build
 ```
 
-## Install as an app
+## Project structure
 
-Visit Uniskillfy in a supported browser and choose **Install Uniskillfy** when it appears. On iPhone or iPad, tap **Share**, then **Add to Home Screen**. The app shell and saved profile/swaps remain available offline.
+```text
+src/
+  App.jsx
+  App.test.jsx
+  calendar.js
+  data.js
+  main.jsx
+  styles.css
+  components/
+    Browse.jsx
+    Cards.jsx
+    ChipInput.jsx
+    ErrorBoundary.jsx
+    Layout.jsx
+    Match.jsx
+    NotFound.jsx
+    RequestDialog.jsx
+    Swaps.jsx
+    SwapCard.jsx
+    Tour.jsx
+    ui.jsx
+  hooks/
+    useAppState.js
+    usePwa.js
+  test-pwa-register.js
+  test-setup.js
+```
 
-## Deploy (pick one)
+## Lighthouse
 
-**Netlify Drop** (fastest): run `npm run build`, then drag the `dist` folder onto https://app.netlify.com/drop.
+Measured on the live site with PageSpeed Insights.
 
-**Vercel / Netlify from GitHub**: push the repo, import it, and use build command `npm run build` and output directory `dist`.
-
-**GitHub Pages**: this configuration targets the root of a domain; use a root-domain deployment or adjust the Vite base and PWA scope for a sub-path.
+| Device | Performance | Accessibility | Best Practices | SEO |
+|---|---:|---:|---:|---:|
+| Mobile | 83 | 97 | 100 | 92 |
+| Desktop | 100 | 97 | 100 | 92 |
 
 ## AI disclosure
 
-Uniskillfy was designed and written with the help of Claude (Anthropic), an AI assistant. Libraries used: React, Vite, Vitest, Testing Library, and Google Fonts (Bricolage Grotesque, DM Sans). No templates or UI kits. All student profiles shown are fictional demo data.
+Uniskillfy was built with help from Claude (Anthropic) for planning, design, and code, and GitHub Copilot for implementing features and fixes. The project uses React, Vite, vite-plugin-pwa, Vitest, Testing Library, and Poppins. It uses no UI frameworks or templates.
 
-## Notes
+All student profiles and seeded ratings are fictional demo data.
 
-This is a front-end prototype. Seeded students are fictional, and "They accepted" is a manual button because there is no server. A production version would add accounts and real-time messaging.
+## Limitations and next steps
+
+This is a front-end prototype, and all profiles and swaps are stored locally in the browser. The "They accepted" action is manual because there is no server. A production version would add accounts, shared data, real-time updates, and chat.

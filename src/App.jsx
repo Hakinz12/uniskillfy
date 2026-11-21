@@ -62,7 +62,7 @@ function Site({ autoStartTour }) {
           <button type="button" className="storage-dismiss" aria-label="Dismiss storage warning" onClick={() => setShowStorageWarning(false)}>×</button>
         </div>
       )}
-      {pwa.offline && <div className="offline-banner" role="status">You're offline. Your swaps are saved on this device.</div>}
+      {pwa.offline && <div className="offline-banner" role="status">You're offline. Your swaps are saved on your device.</div>}
       <Nav
         openCount={openCount}
         onToggleTheme={toggleTheme}

@@ -6,7 +6,7 @@ export function Nav({ openCount, onToggleTheme, onStartTour, showInstall, onInst
     <header className="nav">
       <div className="wrap nav-inner">
         <a href="#top" className="brand" aria-label="Campus Skill Swap home">
-          <span className="brand-mark"><SwapIcon size={20} /></span>
+          <span className="brand-mark"><img src="/icon.svg" alt="" width="34" height="34" /></span>
           <span>Skill<b>Swap</b></span>
         </a>
         <nav className="nav-links" aria-label="Primary">

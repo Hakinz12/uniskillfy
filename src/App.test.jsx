@@ -116,7 +116,7 @@ describe('app flow', () => {
     render(<App />);
     expect(screen.queryByText("You're offline. Your swaps are saved on this device.")).toBeNull();
     act(() => window.dispatchEvent(new Event('offline')));
-    expect(document.querySelector('.offline-banner').textContent).toBe("You're offline. Your swaps are saved on this device.");
+    expect(document.querySelector('.offline-banner').textContent).toBe("You're offline. Your swaps are saved on your device.");
     act(() => window.dispatchEvent(new Event('online')));
     expect(screen.queryByText("You're offline. Your swaps are saved on this device.")).toBeNull();
   });

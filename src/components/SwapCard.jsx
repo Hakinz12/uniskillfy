@@ -6,6 +6,9 @@ const CARD_WIDTH = 1080;
 const CARD_HEIGHT = 1350;
 const PURPLE = '#5b3df5';
 const CORAL = '#ff6b4a';
+const YELLOW = '#ffc933';
+const MINT = '#2fd4a0';
+const INK = '#211638';
 
 function visibleSkills(skills) {
   const shown = skills.slice(0, 4);
@@ -55,7 +58,7 @@ function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 2) {
 }
 
 function drawSkillPills(ctx, skills, x, y, maxWidth) {
-  ctx.font = '700 25px "DM Sans", sans-serif';
+  ctx.font = '700 25px "Nunito", sans-serif';
   let rowX = x;
   let rowY = y;
   let rowHeight = 0;
@@ -68,10 +71,13 @@ function drawSkillPills(ctx, skills, x, y, maxWidth) {
       rowY += rowHeight + 14;
       rowHeight = 0;
     }
-    ctx.fillStyle = '#f2eefc';
+    ctx.fillStyle = YELLOW;
     roundedRect(ctx, rowX, rowY, pillWidth, pillHeight, 18);
     ctx.fill();
-    ctx.fillStyle = PURPLE;
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.fillStyle = INK;
     lines.forEach((line, index) => ctx.fillText(line, rowX + 18, rowY + 36 + index * 32));
     rowX += pillWidth + 14;
     rowHeight = Math.max(rowHeight, pillHeight);
@@ -79,7 +85,7 @@ function drawSkillPills(ctx, skills, x, y, maxWidth) {
   return rowY + rowHeight;
 }
 
-function drawCard(ctx, profile) {
+function drawCard(ctx, profile, brandIcon) {
   const background = ctx.createLinearGradient(0, 0, CARD_WIDTH, CARD_HEIGHT);
   background.addColorStop(0, PURPLE);
   background.addColorStop(1, '#3921a7');
@@ -87,56 +93,64 @@ function drawCard(ctx, profile) {
   ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
 
   ctx.globalAlpha = 0.18;
-  ctx.fillStyle = CORAL;
+  ctx.fillStyle = MINT;
   ctx.beginPath();
   ctx.arc(1010, 130, 270, 0, Math.PI * 2);
   ctx.fill();
-  ctx.strokeStyle = '#fff';
-  ctx.lineWidth = 9;
-  ctx.beginPath();
-  ctx.moveTo(820, 175);
-  ctx.lineTo(970, 175);
-  ctx.lineTo(930, 135);
-  ctx.moveTo(970, 175);
-  ctx.lineTo(930, 215);
-  ctx.moveTo(1000, 230);
-  ctx.lineTo(850, 230);
-  ctx.lineTo(890, 190);
-  ctx.moveTo(850, 230);
-  ctx.lineTo(890, 270);
-  ctx.stroke();
   ctx.globalAlpha = 1;
 
   ctx.fillStyle = '#fff';
-  ctx.font = '800 34px "Bricolage Grotesque", sans-serif';
-  ctx.fillText('SwapSkill', 72, 112);
-  ctx.font = '500 19px "DM Sans", sans-serif';
+  roundedRect(ctx, 64, 68, 68, 68, 19);
+  ctx.fill();
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = 4;
+  roundedRect(ctx, 64, 68, 68, 68, 19);
+  ctx.stroke();
+  ctx.drawImage(brandIcon, 68, 72, 60, 60);
+  ctx.fillStyle = '#fff';
+  ctx.font = '700 34px "Fredoka", sans-serif';
+  ctx.fillText('SwapSkill', 150, 112);
+  ctx.font = '600 19px "Nunito", sans-serif';
   ctx.fillStyle = 'rgba(255,255,255,.82)';
-  ctx.fillText('CAMPUS SKILL EXCHANGE', 74, 148);
+  ctx.fillText('CAMPUS SKILL EXCHANGE', 152, 148);
 
+  ctx.shadowColor = INK;
+  ctx.shadowOffsetX = 8;
+  ctx.shadowOffsetY = 8;
+  ctx.shadowBlur = 0;
   ctx.fillStyle = '#fff';
   roundedRect(ctx, 60, 220, 960, 1010, 34);
   ctx.fill();
+  ctx.shadowColor = 'transparent';
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = 5;
+  roundedRect(ctx, 60, 220, 960, 1010, 34);
+  ctx.stroke();
   ctx.fillStyle = CORAL;
   ctx.beginPath();
   ctx.arc(154, 345, 55, 0, Math.PI * 2);
   ctx.fill();
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = 4;
+  ctx.stroke();
   ctx.fillStyle = '#fff';
-  ctx.font = '800 36px "Bricolage Grotesque", sans-serif';
+  ctx.font = '700 36px "Fredoka", sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText(initials(profile.name), 154, 358);
   ctx.textAlign = 'left';
 
-  ctx.fillStyle = '#24165f';
-  ctx.font = '800 59px "Bricolage Grotesque", sans-serif';
+  ctx.fillStyle = INK;
+  ctx.font = '700 59px "Fredoka", sans-serif';
   let y = drawWrappedText(ctx, profile.name, 120, 470, 840, 70);
-  ctx.fillStyle = '#62607a';
-  ctx.font = '500 29px "DM Sans", sans-serif';
+  ctx.fillStyle = '#514864';
+  ctx.font = '600 29px "Nunito", sans-serif';
   y = drawWrappedText(ctx, profile.college, 122, y + 6, 820, 40);
 
   y += 34;
-  ctx.strokeStyle = '#e6e2f2';
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = '#d7cde8';
+  ctx.lineWidth = 3;
   ctx.beginPath();
   ctx.moveTo(120, y);
   ctx.lineTo(960, y);
@@ -144,33 +158,49 @@ function drawCard(ctx, profile) {
 
   y += 62;
   ctx.fillStyle = CORAL;
-  ctx.font = '800 24px "DM Sans", sans-serif';
+  ctx.font = '800 24px "Nunito", sans-serif';
   ctx.fillText('I TEACH', 122, y);
   y = drawSkillPills(ctx, profile.teaches, 122, y + 24, 836) + 52;
 
   ctx.fillStyle = PURPLE;
-  ctx.font = '800 24px "DM Sans", sans-serif';
+  ctx.font = '800 24px "Nunito", sans-serif';
   ctx.fillText('I WANT TO LEARN', 122, y);
   y = drawSkillPills(ctx, profile.wants, 122, y + 24, 836);
 
-  ctx.fillStyle = PURPLE;
+  ctx.fillStyle = MINT;
   roundedRect(ctx, 122, 1125, 836, 66, 22);
   ctx.fill();
-  ctx.fillStyle = '#fff';
-  ctx.font = '700 24px "DM Sans", sans-serif';
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = 4;
+  roundedRect(ctx, 122, 1125, 836, 66, 22);
+  ctx.stroke();
+  ctx.fillStyle = INK;
+  ctx.font = '700 24px "Nunito", sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText('Teach what you know. Learn what you love.', 540, 1167);
   ctx.textAlign = 'left';
 }
 
 async function createCardImage(profile) {
-  await document.fonts.ready;
+  await Promise.all([
+    document.fonts.load('700 34px "Fredoka"'),
+    document.fonts.load('700 36px "Fredoka"'),
+    document.fonts.load('700 59px "Fredoka"'),
+    document.fonts.load('600 19px "Nunito"'),
+    document.fonts.load('600 29px "Nunito"'),
+    document.fonts.load('700 25px "Nunito"'),
+    document.fonts.load('700 24px "Nunito"'),
+    document.fonts.load('800 24px "Nunito"')
+  ]);
+  const brandIcon = new Image();
+  brandIcon.src = '/icon.svg';
+  await brandIcon.decode();
   const canvas = document.createElement('canvas');
   canvas.width = CARD_WIDTH;
   canvas.height = CARD_HEIGHT;
   const context = canvas.getContext('2d');
   if (!context) throw new Error('Canvas is not available in this browser.');
-  drawCard(context, profile);
+  drawCard(context, profile, brandIcon);
   const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
   if (!blob) throw new Error('The image could not be created.');
   return new File([blob], 'swap-card.png', { type: 'image/png' });

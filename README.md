@@ -53,7 +53,7 @@ Visit Campus Skill Swap in a supported browser and choose **Install app** when i
 
 ## AI disclosure
 
-This project was designed and written with the help of Claude (Anthropic), an AI assistant. Libraries used: React, Vite, Vitest, Testing Library, and Google Fonts (Bricolage Grotesque, DM Sans). No templates or UI kits. All student profiles shown are fictional demo data.
+This project was designed and written with the help of Claude (Anthropic), an AI assistant. Libraries used: React, Vite, Vitest, Testing Library, and Google Fonts (Fredoka, Nunito). No templates or UI kits. All student profiles shown are fictional demo data.
 
 ## Notes
 

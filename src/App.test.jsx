@@ -1,14 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { StrictMode } from 'react';
 import App from './App.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import { SEED, badgeList, computeMatches, computeStreak, goalProgress, levelInfo, points, ratingInfo, weekStart } from './data.js';
 import { buildCalendarContent } from './calendar.js';
 import { buildShareText } from './components/SwapCard.jsx';
 
+const TOUR_SEEN_KEY = 'campus-skill-swap.tourSeen.v1';
+
 beforeEach(() => {
   cleanup();
   localStorage.clear();
+  sessionStorage.clear();
   window.history.replaceState({}, '', '/');
 });
 
@@ -106,19 +110,19 @@ describe('app flow', () => {
     act(() => window.dispatchEvent(event));
 
     expect(event.defaultPrevented).toBe(true);
-    const installButton = screen.getByRole('button', { name: 'Install app' });
+    const installButton = screen.getByRole('button', { name: 'Install Uniskillfy' });
     fireEvent.click(installButton);
     await waitFor(() => expect(prompt).toHaveBeenCalledOnce());
-    expect(screen.queryByRole('button', { name: 'Install app' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Install Uniskillfy' })).toBeNull();
   });
 
   it('toggles the offline banner on network events', () => {
     render(<App />);
-    expect(screen.queryByText("You're offline. Your swaps are saved on this device.")).toBeNull();
+    expect(screen.queryByText("You're offline. Your Uniskillfy swaps are saved on this device.")).toBeNull();
     act(() => window.dispatchEvent(new Event('offline')));
-    expect(document.querySelector('.offline-banner').textContent).toBe("You're offline. Your swaps are saved on your device.");
+    expect(document.querySelector('.offline-banner').textContent).toBe("You're offline. Your Uniskillfy swaps are saved on this device.");
     act(() => window.dispatchEvent(new Event('online')));
-    expect(screen.queryByText("You're offline. Your swaps are saved on this device.")).toBeNull();
+    expect(screen.queryByText("You're offline. Your Uniskillfy swaps are saved on this device.")).toBeNull();
   });
 
   it('hides install guidance while running standalone', () => {
@@ -133,8 +137,8 @@ describe('app flow', () => {
       event.prompt = vi.fn();
       event.userChoice = Promise.resolve({ outcome: 'accepted' });
       act(() => window.dispatchEvent(event));
-      expect(screen.queryByRole('button', { name: 'Install app' })).toBeNull();
-      expect(screen.queryByText('Tap Share, then Add to Home Screen')).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Install Uniskillfy' })).toBeNull();
+      expect(screen.queryByText('To install Uniskillfy, tap Share, then Add to Home Screen')).toBeNull();
     } finally {
       matchMedia.mockRestore();
     }
@@ -249,7 +253,7 @@ describe('app flow', () => {
     window.history.replaceState({}, '', '/missing-page#section');
     render(<App />);
     expect(screen.getByRole('heading', { name: 'Page not found' })).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'Go to Campus Skill Swap' }).getAttribute('href')).toBe('/');
+    expect(screen.getByRole('link', { name: 'Go to Uniskillfy' }).getAttribute('href')).toBe('/');
   });
 
   it('shows a dismissible warning when localStorage cannot be written', () => {
@@ -264,18 +268,19 @@ describe('app flow', () => {
     }
   });
 
-  it('auto-starts the tour on first visit', () => {
-    render(<App autoStartTour />);
+  it('auto-starts the tour on first visit and saves the flag immediately', () => {
+    render(<StrictMode><App autoStartTour /></StrictMode>);
     expect(screen.getByRole('dialog', { name: 'Welcome' })).toBeTruthy();
+    expect(localStorage.getItem(TOUR_SEEN_KEY)).toBe('true');
   });
 
   it('does not auto-start the tour when it has already been seen', () => {
-    localStorage.setItem('tourSeen', 'true');
+    localStorage.setItem(TOUR_SEEN_KEY, 'true');
     render(<App autoStartTour />);
     expect(screen.queryByRole('dialog', { name: 'Welcome' })).toBeNull();
   });
 
-  it('supports Next, Back, and Skip and saves tourSeen', () => {
+  it('supports Next, Back, and Skip without changing the saved flag during replay', () => {
     render(<App autoStartTour={false} />);
     const trigger = screen.getAllByRole('link', { name: 'Take the tour' })[0];
     trigger.focus();
@@ -290,8 +295,107 @@ describe('app flow', () => {
     dialog = screen.getByRole('dialog', { name: 'Tell us your trade' });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Skip' }));
     expect(screen.queryByRole('dialog', { name: 'Tell us your trade' })).toBeNull();
-    expect(localStorage.getItem('tourSeen')).toBe('true');
+    expect(localStorage.getItem(TOUR_SEEN_KEY)).toBeNull();
     expect(document.activeElement).toBe(trigger);
+  });
+
+  it('replays the tour from the Nav without changing the saved flag', () => {
+    localStorage.setItem(TOUR_SEEN_KEY, 'true');
+    render(<App autoStartTour />);
+    expect(screen.queryByRole('dialog', { name: 'Welcome' })).toBeNull();
+    fireEvent.click(screen.getAllByRole('link', { name: 'Take the tour' })[0]);
+    expect(screen.getByRole('dialog', { name: 'Welcome' })).toBeTruthy();
+    expect(localStorage.getItem(TOUR_SEEN_KEY)).toBe('true');
+  });
+
+  it('migrates the old standalone tour key', () => {
+    localStorage.setItem('tourSeen', 'false');
+    render(<App autoStartTour />);
+    expect(screen.queryByRole('dialog', { name: 'Welcome' })).toBeNull();
+    expect(localStorage.getItem(TOUR_SEEN_KEY)).toBe('true');
+  });
+
+  it('migrates tourSeen from old app-state JSON before rewriting it', () => {
+    localStorage.setItem('campus-skill-swap.react.v1', JSON.stringify({
+      profile: null,
+      requests: [],
+      tourSeen: true
+    }));
+    render(<App autoStartTour />);
+    expect(screen.queryByRole('dialog', { name: 'Welcome' })).toBeNull();
+    expect(localStorage.getItem(TOUR_SEEN_KEY)).toBe('true');
+    expect(JSON.parse(localStorage.getItem('campus-skill-swap.react.v1')).tourSeen).toBeUndefined();
+  });
+
+  it('does not auto-start on a 404 or while a modal is open', () => {
+    window.history.replaceState({}, '', '/missing-page');
+    const notFound = render(<App autoStartTour />);
+    expect(screen.queryByRole('dialog', { name: 'Welcome' })).toBeNull();
+    notFound.unmount();
+
+    window.history.replaceState({}, '', '/');
+    const errorScreen = document.createElement('main');
+    errorScreen.className = 'error-screen';
+    errorScreen.setAttribute('role', 'alert');
+    document.body.appendChild(errorScreen);
+    const errorFallback = render(<App autoStartTour />);
+    expect(screen.queryByRole('dialog', { name: 'Welcome' })).toBeNull();
+    errorFallback.unmount();
+    errorScreen.remove();
+
+    const modal = document.createElement('dialog');
+    modal.open = true;
+    document.body.appendChild(modal);
+    try {
+      render(<App autoStartTour />);
+      expect(screen.queryByRole('dialog', { name: 'Welcome' })).toBeNull();
+      expect(localStorage.getItem(TOUR_SEEN_KEY)).toBeNull();
+    } finally {
+      modal.remove();
+    }
+  });
+
+  it('uses sessionStorage when localStorage cannot save the tour flag', () => {
+    const originalSetItem = Storage.prototype.setItem;
+    const setItemSpy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (key, value) {
+      if (this === localStorage) throw new Error('local storage is blocked');
+      return originalSetItem.call(this, key, value);
+    });
+    try {
+      render(<App autoStartTour />);
+      expect(screen.getByRole('dialog', { name: 'Welcome' })).toBeTruthy();
+      expect(sessionStorage.getItem(TOUR_SEEN_KEY)).toBe('true');
+    } finally {
+      setItemSpy.mockRestore();
+    }
+  });
+
+  it('keeps the tour flag when profile data is reset', () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    localStorage.setItem(TOUR_SEEN_KEY, 'true');
+    try {
+      render(<App autoStartTour={false} />);
+      fireEvent.click(screen.getByText('Fill with example data'));
+      fireEvent.click(screen.getByRole('button', { name: 'Reset my data' }));
+      expect(localStorage.getItem(TOUR_SEEN_KEY)).toBe('true');
+      expect(JSON.parse(localStorage.getItem('campus-skill-swap.react.v1'))).toEqual({ profile: null, requests: [], goals: [] });
+    } finally {
+      confirmSpy.mockRestore();
+    }
+  });
+
+  it('keeps the tour flag when the error boundary clears saved data', () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    localStorage.setItem(TOUR_SEEN_KEY, 'true');
+    localStorage.setItem('saved-test-data', 'remove me');
+    try {
+      render(<ErrorBoundary><Broken /></ErrorBoundary>);
+      fireEvent.click(screen.getByRole('button', { name: 'Clear my saved data and reload' }));
+      expect(localStorage.getItem(TOUR_SEEN_KEY)).toBe('true');
+      expect(localStorage.getItem('saved-test-data')).toBeNull();
+    } finally {
+      errorSpy.mockRestore();
+    }
   });
 
   it('traps keyboard focus and skips the tour on Escape', () => {
@@ -303,7 +407,7 @@ describe('app flow', () => {
     expect(document.activeElement).toBe(within(dialog).getByRole('button', { name: 'Skip' }));
     fireEvent.keyDown(dialog, { key: 'Escape' });
     expect(screen.queryByRole('dialog', { name: 'Welcome' })).toBeNull();
-    expect(localStorage.getItem('tourSeen')).toBe('true');
+    expect(localStorage.getItem(TOUR_SEEN_KEY)).toBe('true');
   });
 
   it('renders the community', () => {
@@ -316,7 +420,7 @@ describe('app flow', () => {
     render(<App />);
     fireEvent.click(screen.getByText('Fill with example data'));
     fireEvent.click(screen.getByRole('button', { name: 'Share my swap card' }));
-    const dialog = screen.getByRole('dialog', { name: 'Your SwapSkill card' });
+    const dialog = screen.getByRole('dialog', { name: 'Your Uniskillfy card' });
     expect(dialog.open).toBe(true);
     expect(within(dialog).getByText('Tolu Adebayo')).toBeTruthy();
   });
@@ -326,7 +430,7 @@ describe('app flow', () => {
       teaches: ['Python', 'Excel'],
       wants: ['Guitar']
     }, 'https://campus.example/swap')).toBe(
-      'I teach Python and Excel. I want to learn Guitar. Swap skills with me on Campus Skill Swap: https://campus.example/swap'
+      'I teach Python and Excel. I want to learn Guitar. Swap skills with me on Uniskillfy: https://campus.example/swap'
     );
   });
 
@@ -419,7 +523,9 @@ describe('app flow', () => {
       id: 'swap-1', offer: 'Guitar', learn: 'Python', mname: 'Amara Okafor'
     }, { start: '2026-11-28T16:00:00.000Z', minutes: 45 }, new Date('2026-11-20T08:00:00.000Z'));
 
-    expect(content).toContain('SUMMARY:Skill swap: Guitar for Python with Amara Okafor');
+    expect(content).toContain('PRODID:-//Uniskillfy//EN');
+    expect(content).toContain('UID:swap-1@uniskillfy');
+    expect(content).toContain('SUMMARY:Uniskillfy: Guitar for Python with Amara Okafor');
     expect(content).toContain('DTSTART:20261128T160000Z');
     expect(content).toContain('DTEND:20261128T164500Z');
     expect(content).toContain('BEGIN:VCALENDAR\r\n');
@@ -494,5 +600,24 @@ describe('app flow', () => {
     fireEvent.keyDown(wantInput, { key: 'Enter' });
     fireEvent.click(screen.getByRole('button', { name: 'Find matches' }));
     expect(document.querySelector('#browse img')).toBeNull();
+  });
+
+  it('remembers the tour start for the page load when both storage APIs fail', () => {
+    const getItemSpy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('storage is blocked');
+    });
+    const setItemSpy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('storage is blocked');
+    });
+    try {
+      const firstVisit = render(<App autoStartTour />);
+      expect(screen.getByRole('dialog', { name: 'Welcome' })).toBeTruthy();
+      firstVisit.unmount();
+      render(<App autoStartTour />);
+      expect(screen.queryByRole('dialog', { name: 'Welcome' })).toBeNull();
+    } finally {
+      getItemSpy.mockRestore();
+      setItemSpy.mockRestore();
+    }
   });
 });

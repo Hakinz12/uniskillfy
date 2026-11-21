@@ -1,7 +1,7 @@
-# Campus Skill Swap
+# Uniskillfy
 
-**Trade what you know for what you want to learn.**
-A peer-learning website where students list skills they can teach and skills they want to learn, get ranked matches (mutual swaps first), send swap requests, and earn points and badges as they complete sessions.
+**Swap skills on campus.**
+Uniskillfy helps students list skills they can teach and skills they want to learn, get ranked matches (mutual swaps first), send swap requests, and earn points and badges as they complete sessions.
 
 Built for the **Build Your Own Website** hackathon by Roxten Studios.
 
@@ -41,7 +41,7 @@ npm run build    # production build in dist/
 
 ## Install as an app
 
-Visit Campus Skill Swap in a supported browser and choose **Install app** when it appears. On iPhone or iPad, tap **Share**, then **Add to Home Screen**. The app shell and saved profile/swaps remain available offline.
+Visit Uniskillfy in a supported browser and choose **Install Uniskillfy** when it appears. On iPhone or iPad, tap **Share**, then **Add to Home Screen**. The app shell and saved profile/swaps remain available offline.
 
 ## Deploy (pick one)
 
@@ -53,7 +53,7 @@ Visit Campus Skill Swap in a supported browser and choose **Install app** when i
 
 ## AI disclosure
 
-This project was designed and written with the help of Claude (Anthropic), an AI assistant. Libraries used: React, Vite, Vitest, Testing Library, and Google Fonts (Fredoka, Nunito). No templates or UI kits. All student profiles shown are fictional demo data.
+Uniskillfy was designed and written with the help of Claude (Anthropic), an AI assistant. Libraries used: React, Vite, Vitest, Testing Library, and Google Fonts (Bricolage Grotesque, DM Sans). No templates or UI kits. All student profiles shown are fictional demo data.
 
 ## Notes
 

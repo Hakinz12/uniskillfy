@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 const STEPS = [
   {
     title: 'Welcome',
-    body: 'Campus Skill Swap helps students trade what they know for what they want to learn.',
+    body: 'Uniskillfy helps students trade what they know for what they want to learn.',
     target: '#top h1'
   },
   {

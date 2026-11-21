@@ -14,8 +14,8 @@ export default function NotFound() {
     <main className="error-screen">
       <div className="empty">
         <h1>Page not found</h1>
-        <p>We couldn't find that page. Head back to Campus Skill Swap to find your next skill swap.</p>
-        <a className="btn primary" href={homeUrl}>Go to Campus Skill Swap</a>
+        <p>We couldn't find that page. Head back to Uniskillfy to find your next skill swap.</p>
+        <a className="btn primary" href={homeUrl}>Go to Uniskillfy</a>
       </div>
     </main>
   );

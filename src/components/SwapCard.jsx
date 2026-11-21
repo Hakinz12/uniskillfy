@@ -6,9 +6,6 @@ const CARD_WIDTH = 1080;
 const CARD_HEIGHT = 1350;
 const PURPLE = '#5b3df5';
 const CORAL = '#ff6b4a';
-const YELLOW = '#ffc933';
-const MINT = '#2fd4a0';
-const INK = '#211638';
 
 function visibleSkills(skills) {
   const shown = skills.slice(0, 4);
@@ -17,7 +14,7 @@ function visibleSkills(skills) {
 }
 
 export function buildShareText(profile, url = window.location.href) {
-  return `I teach ${profile.teaches.join(' and ')}. I want to learn ${profile.wants.join(' and ')}. Swap skills with me on Campus Skill Swap: ${url}`;
+  return `I teach ${profile.teaches.join(' and ')}. I want to learn ${profile.wants.join(' and ')}. Swap skills with me on Uniskillfy: ${url}`;
 }
 
 function roundedRect(ctx, x, y, width, height, radius) {
@@ -58,7 +55,7 @@ function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 2) {
 }
 
 function drawSkillPills(ctx, skills, x, y, maxWidth) {
-  ctx.font = '700 25px "Nunito", sans-serif';
+  ctx.font = '700 25px "DM Sans", sans-serif';
   let rowX = x;
   let rowY = y;
   let rowHeight = 0;
@@ -71,13 +68,10 @@ function drawSkillPills(ctx, skills, x, y, maxWidth) {
       rowY += rowHeight + 14;
       rowHeight = 0;
     }
-    ctx.fillStyle = YELLOW;
+    ctx.fillStyle = '#f2eefc';
     roundedRect(ctx, rowX, rowY, pillWidth, pillHeight, 18);
     ctx.fill();
-    ctx.strokeStyle = INK;
-    ctx.lineWidth = 3;
-    ctx.stroke();
-    ctx.fillStyle = INK;
+    ctx.fillStyle = PURPLE;
     lines.forEach((line, index) => ctx.fillText(line, rowX + 18, rowY + 36 + index * 32));
     rowX += pillWidth + 14;
     rowHeight = Math.max(rowHeight, pillHeight);
@@ -93,7 +87,7 @@ function drawCard(ctx, profile, brandIcon) {
   ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
 
   ctx.globalAlpha = 0.18;
-  ctx.fillStyle = MINT;
+  ctx.fillStyle = CORAL;
   ctx.beginPath();
   ctx.arc(1010, 130, 270, 0, Math.PI * 2);
   ctx.fill();
@@ -102,55 +96,37 @@ function drawCard(ctx, profile, brandIcon) {
   ctx.fillStyle = '#fff';
   roundedRect(ctx, 64, 68, 68, 68, 19);
   ctx.fill();
-  ctx.strokeStyle = INK;
-  ctx.lineWidth = 4;
-  roundedRect(ctx, 64, 68, 68, 68, 19);
-  ctx.stroke();
   ctx.drawImage(brandIcon, 68, 72, 60, 60);
   ctx.fillStyle = '#fff';
-  ctx.font = '700 34px "Fredoka", sans-serif';
-  ctx.fillText('SwapSkill', 150, 112);
-  ctx.font = '600 19px "Nunito", sans-serif';
+  ctx.font = '800 34px "Bricolage Grotesque", sans-serif';
+  ctx.fillText('Uniskillfy', 150, 112);
+  ctx.font = '500 19px "DM Sans", sans-serif';
   ctx.fillStyle = 'rgba(255,255,255,.82)';
   ctx.fillText('CAMPUS SKILL EXCHANGE', 152, 148);
 
-  ctx.shadowColor = INK;
-  ctx.shadowOffsetX = 8;
-  ctx.shadowOffsetY = 8;
-  ctx.shadowBlur = 0;
   ctx.fillStyle = '#fff';
   roundedRect(ctx, 60, 220, 960, 1010, 34);
   ctx.fill();
-  ctx.shadowColor = 'transparent';
-  ctx.shadowOffsetX = 0;
-  ctx.shadowOffsetY = 0;
-  ctx.strokeStyle = INK;
-  ctx.lineWidth = 5;
-  roundedRect(ctx, 60, 220, 960, 1010, 34);
-  ctx.stroke();
   ctx.fillStyle = CORAL;
   ctx.beginPath();
   ctx.arc(154, 345, 55, 0, Math.PI * 2);
   ctx.fill();
-  ctx.strokeStyle = INK;
-  ctx.lineWidth = 4;
-  ctx.stroke();
   ctx.fillStyle = '#fff';
-  ctx.font = '700 36px "Fredoka", sans-serif';
+  ctx.font = '800 36px "Bricolage Grotesque", sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText(initials(profile.name), 154, 358);
   ctx.textAlign = 'left';
 
-  ctx.fillStyle = INK;
-  ctx.font = '700 59px "Fredoka", sans-serif';
+  ctx.fillStyle = '#24165f';
+  ctx.font = '800 59px "Bricolage Grotesque", sans-serif';
   let y = drawWrappedText(ctx, profile.name, 120, 470, 840, 70);
-  ctx.fillStyle = '#514864';
-  ctx.font = '600 29px "Nunito", sans-serif';
+  ctx.fillStyle = '#62607a';
+  ctx.font = '500 29px "DM Sans", sans-serif';
   y = drawWrappedText(ctx, profile.college, 122, y + 6, 820, 40);
 
   y += 34;
-  ctx.strokeStyle = '#d7cde8';
-  ctx.lineWidth = 3;
+  ctx.strokeStyle = '#e6e2f2';
+  ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(120, y);
   ctx.lineTo(960, y);
@@ -158,40 +134,27 @@ function drawCard(ctx, profile, brandIcon) {
 
   y += 62;
   ctx.fillStyle = CORAL;
-  ctx.font = '800 24px "Nunito", sans-serif';
+  ctx.font = '800 24px "DM Sans", sans-serif';
   ctx.fillText('I TEACH', 122, y);
   y = drawSkillPills(ctx, profile.teaches, 122, y + 24, 836) + 52;
 
   ctx.fillStyle = PURPLE;
-  ctx.font = '800 24px "Nunito", sans-serif';
+  ctx.font = '800 24px "DM Sans", sans-serif';
   ctx.fillText('I WANT TO LEARN', 122, y);
   y = drawSkillPills(ctx, profile.wants, 122, y + 24, 836);
 
-  ctx.fillStyle = MINT;
+  ctx.fillStyle = PURPLE;
   roundedRect(ctx, 122, 1125, 836, 66, 22);
   ctx.fill();
-  ctx.strokeStyle = INK;
-  ctx.lineWidth = 4;
-  roundedRect(ctx, 122, 1125, 836, 66, 22);
-  ctx.stroke();
-  ctx.fillStyle = INK;
-  ctx.font = '700 24px "Nunito", sans-serif';
+  ctx.fillStyle = '#fff';
+  ctx.font = '700 24px "DM Sans", sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText('Teach what you know. Learn what you love.', 540, 1167);
   ctx.textAlign = 'left';
 }
 
 async function createCardImage(profile) {
-  await Promise.all([
-    document.fonts.load('700 34px "Fredoka"'),
-    document.fonts.load('700 36px "Fredoka"'),
-    document.fonts.load('700 59px "Fredoka"'),
-    document.fonts.load('600 19px "Nunito"'),
-    document.fonts.load('600 29px "Nunito"'),
-    document.fonts.load('700 25px "Nunito"'),
-    document.fonts.load('700 24px "Nunito"'),
-    document.fonts.load('800 24px "Nunito"')
-  ]);
+  await document.fonts.ready;
   const brandIcon = new Image();
   brandIcon.src = '/icon.svg';
   await brandIcon.decode();
@@ -259,7 +222,7 @@ export default function SwapCard({ profile }) {
       const text = buildShareText(profile);
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
         try {
-          await navigator.share({ files: [file], title: 'My SwapSkill card', text });
+          await navigator.share({ files: [file], title: 'My Uniskillfy card', text });
           return;
         } catch (error) {
           if (error?.name === 'AbortError') return;
@@ -285,10 +248,10 @@ export default function SwapCard({ profile }) {
         if (e.target === dialogRef.current) dialogRef.current.close();
       }}>
         <div className="dlg-body swap-dialog-body">
-          <h3 id="swapCardTitle">Your SwapSkill card</h3>
+          <h3 id="swapCardTitle">Your Uniskillfy card</h3>
           <article className="swap-share-card" aria-label={`${profile.name}'s swap card`}>
             <header className="swap-share-brand">
-              <strong>SwapSkill</strong>
+              <strong>Uniskillfy</strong>
               <span>Campus skill exchange</span>
             </header>
             <div className="swap-share-arrows" aria-hidden="true"><SwapIcon size={34} /></div>

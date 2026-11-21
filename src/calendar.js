@@ -13,14 +13,14 @@ function toIcsDate(date) {
 export function buildCalendarContent(request, session, stamp = new Date()) {
   const start = new Date(session.start);
   const end = new Date(start.getTime() + session.minutes * 60_000);
-  const title = `Skill swap: ${request.offer} for ${request.learn} with ${request.mname}`;
+  const title = `Uniskillfy: ${request.offer} for ${request.learn} with ${request.mname}`;
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Campus Skill Swap//EN',
+    'PRODID:-//Uniskillfy//EN',
     'CALSCALE:GREGORIAN',
     'BEGIN:VEVENT',
-    `UID:${escapeText(request.id)}@campus-skill-swap`,
+    `UID:${escapeText(request.id)}@uniskillfy`,
     `DTSTAMP:${toIcsDate(stamp)}`,
     `DTSTART:${toIcsDate(start)}`,
     `DTEND:${toIcsDate(end)}`,

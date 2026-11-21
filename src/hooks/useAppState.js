@@ -1,8 +1,50 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 const STORE = 'campus-skill-swap.react.v1';
 const THEME = 'campus-skill-swap.theme';
+export const TOUR_SEEN_KEY = 'campus-skill-swap.tourSeen.v1';
+const LEGACY_TOUR_SEEN_KEY = 'tourSeen';
 const EMPTY = { profile: null, requests: [], goals: [] };
+let tourSeenInMemory = false;
+
+function saveTourSeen() {
+  try {
+    localStorage.setItem(TOUR_SEEN_KEY, 'true');
+    return;
+  } catch { /* try session storage when persistent storage is blocked */ }
+  try {
+    sessionStorage.setItem(TOUR_SEEN_KEY, 'true');
+    return;
+  } catch { /* retain the seen state for this page load */ }
+  tourSeenInMemory = true;
+}
+
+function isTourSeen() {
+  if (tourSeenInMemory) return true;
+  try {
+    if (localStorage.getItem(TOUR_SEEN_KEY) !== null) return true;
+  } catch { /* try the session fallback */ }
+  try {
+    if (sessionStorage.getItem(TOUR_SEEN_KEY) !== null) return true;
+  } catch { /* storage may be blocked */ }
+
+  try {
+    if (localStorage.getItem(LEGACY_TOUR_SEEN_KEY) !== null) {
+      saveTourSeen();
+      return true;
+    }
+    const oldState = JSON.parse(localStorage.getItem(STORE));
+    if (oldState?.tourSeen === true || oldState?.tourSeen === 'true') {
+      saveTourSeen();
+      return true;
+    }
+  } catch { /* ignore inaccessible or corrupt legacy data */ }
+  return false;
+}
+
+function autoStartIsBlocked() {
+  return Boolean(document.querySelector('.error-screen[role="alert"], dialog[open], [role="dialog"]'));
+}
 
 function checkStorage() {
   try {
@@ -19,6 +61,7 @@ function load() {
   try {
     const d = JSON.parse(localStorage.getItem(STORE));
     if (d && typeof d === 'object') {
+      if (d.tourSeen === true || d.tourSeen === 'true') saveTourSeen();
       return {
         profile: d.profile || null,
         requests: Array.isArray(d.requests) ? d.requests : [],
@@ -69,26 +112,31 @@ export function useAppState() {
   return { ...state, storageAvailable, saveProfile, addRequest, advance, schedule, saveReview, addGoal, removeGoal, updateGoal, cancel, reset };
 }
 
-const TOUR_SEEN = 'tourSeen';
-
 export function useTour(autoStart = true) {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
+  const openRef = useRef(false);
+  const autoStartAttempted = useRef(false);
 
-  useEffect(() => {
-    if (!autoStart) return;
-    try {
-      if (localStorage.getItem(TOUR_SEEN) === 'true') return;
-    } catch { /* start the tour if storage is unavailable */ }
-    setOpen(true);
-  }, [autoStart]);
-
-  const start = useCallback(() => {
+  const show = useCallback(() => {
+    openRef.current = true;
     setStep(0);
     setOpen(true);
   }, []);
+
+  useEffect(() => {
+    if (!autoStart || autoStartAttempted.current) return;
+    autoStartAttempted.current = true;
+    if (isTourSeen() || autoStartIsBlocked()) return;
+    saveTourSeen();
+    show();
+  }, [autoStart, show]);
+
+  const start = useCallback(() => {
+    if (!openRef.current) show();
+  }, [show]);
   const finish = useCallback(() => {
-    try { localStorage.setItem(TOUR_SEEN, 'true'); } catch { /* storage may be blocked */ }
+    openRef.current = false;
     setOpen(false);
   }, []);
 

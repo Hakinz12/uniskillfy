@@ -10,9 +10,9 @@ export default defineConfig({
       registerType: 'prompt',
       includeAssets: ['icon.svg', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png', 'pwa-maskable-512x512.png'],
       manifest: {
-        name: 'Campus Skill Swap',
-        short_name: 'SkillSwap',
-        description: 'Trade what you know for what you want to learn.',
+        name: 'Uniskillfy',
+        short_name: 'Uniskillfy',
+        description: 'Swap skills on campus.',
         start_url: '/',
         scope: '/',
         display: 'standalone',

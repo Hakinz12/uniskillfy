@@ -1,10 +1,11 @@
-import { readFile, mkdir } from 'node:fs/promises';
+import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { generateMaskableAsset } from '@vite-pwa/assets-generator/api';
 
 const source = await readFile(new URL('../public/icon.svg', import.meta.url));
 const publicDir = new URL('../public/', import.meta.url);
 await mkdir(publicDir, { recursive: true });
+await writeFile(new URL('../public/favicon.svg', import.meta.url), source);
 
 async function writeIcon(name, size, padding) {
   const image = await generateMaskableAsset('png', source, size, {

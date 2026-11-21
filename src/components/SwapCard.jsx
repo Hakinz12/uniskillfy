@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { initials } from '../data.js';
-import { useToast, SwapIcon } from './ui.jsx';
+import { useToast } from './ui.jsx';
 
 const CARD_WIDTH = 1080;
 const CARD_HEIGHT = 1350;
@@ -254,7 +254,7 @@ export default function SwapCard({ profile }) {
               <strong>Uniskillfy</strong>
               <span>Campus skill exchange</span>
             </header>
-            <div className="swap-share-arrows" aria-hidden="true"><SwapIcon size={34} /></div>
+            <img className="swap-share-arrows" src="/icon.svg" alt="" width="34" height="34" />
             <div className="swap-share-person">
               <span className="swap-share-avatar" aria-hidden="true">{initials(profile.name)}</span>
               <div><h4>{profile.name}</h4><p>{profile.college}</p></div>
